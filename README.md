@@ -157,7 +157,9 @@ event is triggered, respectively.
 Associations are specified using `Model.has`.  This prevents naming collisions
 and provides a convenient extension point outside of `Model` itself.
 
-##one *Constructor.has().one(name, options)*
+##one
+
+*Constructor.has().one(name, options)*
 
 Instances of **Constructor** should contain a reference to one model, stored
 in the property specified by **name**.
@@ -193,7 +195,9 @@ The attribute where the id of the associated model is stored.
 
 The attribute where the associated models attributes are stored.
 
-##many *Constructor.has().many(name, options)*
+##many
+
+*Constructor.has().many(name, options)*
 
 Instances of **Constructor** should contain a collection with many models,
 stored in the property specified by **name**.
