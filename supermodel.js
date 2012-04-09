@@ -74,18 +74,11 @@
       var current, options = this.options;
       if (!model) return;
 
-      // If `other` is a primitive, assume it's an id.
-      if (other && !_.isObject(other)) other = {id: other};
-
       current = model[options.name];
 
       // Are these the current attributes?
       if (current && current.attributes === other) return;
-
-      // Create a model if we don't already have one.
-      if (other && !(other instanceof Model)) {
-        other = new options.model(other);
-      }
+      other = this.create(other);
 
       // Bail, we already have the correct model.
       if (current === other) return;
@@ -108,14 +101,11 @@
     // Create a model from a hash of attributes or an id.
     create: function(attrs) {
       var options = this.options;
+      if (!attrs || (attrs instanceof Model)) return attrs;
 
       // If `attrs` is a primitive, assume it's an id.
-      if (attrs && !_.isObject(attrs)) attrs = {id: attrs};
-
-      // Create a model if we don't already have one.
-      if (attrs && !(attrs instanceof Model)) {
-        attrs = new options.model(attrs, {parse: true});
-      }
+      if (!_.isObject(attrs)) attrs = {id: attrs};
+      attrs = new options.model(attrs, {parse: true});
       return attrs;
     }
 
