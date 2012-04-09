@@ -90,13 +90,4 @@
     ok(!model.match({x: 1, y: 2, z: 3}));
   });
 
-  test('Attributes are parsed before being set.', 1, function() {
-    var attrs = {id: 1};
-    var model = new Model({id: 1});
-    model.parse = function(resp) {
-      ok(resp === attrs);
-    };
-    model = new Model(attrs);
-  });
-
 })();

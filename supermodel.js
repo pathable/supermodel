@@ -293,7 +293,7 @@
       // attributes provided.
       if (attrs && (cid = attrs._cid)) return all.getByCid(cid);
       if (attrs && (id = attrs.id) && (model = all.get(id))) {
-        model.set(model.parse(attrs));
+        model.set(attrs);
         return model;
       }
 
@@ -306,7 +306,7 @@
 
       // Add the model to `all` for each constructor in its prototype chain.
       var ctor = this.constructor;
-      while (ctor && ctor !== Backbone.Model) {
+      while (ctor && ctor !== Model) {
         (ctor.all || (ctor.all = new Collection())).add(this);
         ctor = ctor.__super__ && ctor.__super__.constructor;
       }
@@ -338,7 +338,7 @@
       // Since parse is called before models are added to `all` collections we
       // must walk the inheritance chain and trigger parse on each.
       var ctor = this.constructor;
-      while (ctor && ctor !== Backbone.Model) {
+      while (ctor && ctor !== Model) {
         if (ctor.all) ctor.all.trigger('parse', this, resp, xhr);
         ctor = ctor.__super__ && ctor.__super__.constructor;
       }
