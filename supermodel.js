@@ -17,6 +17,7 @@
     if (this.initialize) all.on('initialize', this.initialize, this);
     if (this.change) all.on('change', this.change, this);
     if (this.parse) all.on('parse', this.parse, this);
+    if (this.destroy) all.on('destroy', this.destroy, this);
   };
 
   Association.extend = extend;
@@ -68,6 +69,13 @@
 
     remove: function(model) {
       this.replace(model, null);
+    },
+
+    destroy: function(model) {
+      var other = model[this.options.name];
+      if (!other) return;
+      this.remove(model);
+      this.dissociate(other, model)
     },
 
     replace: function(model, other) {

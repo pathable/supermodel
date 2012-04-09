@@ -1,6 +1,6 @@
 (function() {
 
-  var User, Users, Membership, Memberships;
+  var User, Users, Membership, Memberships, Settings;
   var Model = Supermodel.Model;
   var Collection = Supermodel.Collection;
 
@@ -36,12 +36,29 @@
         }
       });
 
+      Settings = Model.extend({
+        constructor: function() {
+          var o = Settings.__super__.constructor.apply(this, arguments);
+          if (o) return o;
+        }
+      });
+
       Users = Collection.extend({model: User});
       Memberships = Collection.extend({model: Membership});
 
       Membership.has().one('user', {
         model: User,
         inverse: 'memberships'
+      });
+
+      User.has().one('settings', {
+        model: Settings,
+        inverse: 'user'
+      });
+
+      Settings.has().one('user', {
+        model: User,
+        inverse: 'settings'
       });
 
     }
@@ -82,6 +99,33 @@
     var user = membership.user;
     ok(user instanceof User);
     strictEqual(user.id, 2);
+  });
+
+  test('With inverse.', function() {
+    var user = new User({id: 1});
+    var settings = new Settings({id: 1, user_id: 1});
+
+    ok(user.settings === settings);
+    strictEqual(user.get('settings_id'), 1);
+    ok(settings.user === user);
+    strictEqual(settings.get('user_id'), 1);
+
+    user.unset('settings_id');
+    ok(!user.settings);
+    ok(!user.get('settings_id'));
+    ok(!settings.user);
+    ok(!settings.get('user_id'));
+  });
+
+  test('Dissociate on destroy.', function() {
+    var user = new User({id: 1});
+    var settings = new Settings({id: 1, user_id: 1});
+
+    settings.trigger('destroy', settings);
+    ok(!user.settings);
+    ok(!user.get('settings_id'));
+    ok(!settings.user);
+    ok(!settings.get('user_id'));
   });
 
 })();
