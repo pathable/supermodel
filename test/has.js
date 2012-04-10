@@ -4,66 +4,70 @@
   var Model = Supermodel.Model;
   var Collection = Supermodel.Collection;
 
-  module('Has One', {
+  var setup = function() {
+    if (Model.all) {
+      Model.all.reset([]);
+      Model.all = null;
+    }
 
-    setup: function() {
-      if (Model.all) {
-        Model.all.reset([]);
-        Model.all = null;
+    if (User && User.all) {
+      User.all.reset([]);
+      User.all = null;
+    }
+
+    if (Membership && Membership.all) {
+      Membership.all.reset([]);
+      Membership.all = null;
+    }
+
+    User = Model.extend({
+      constructor: function() {
+        var o = User.__super__.constructor.apply(this, arguments);
+        if (o) return o;
       }
+    });
 
-      if (User && User.all) {
-        User.all.reset([]);
-        User.all = null;
+    Membership = Model.extend({
+      constructor: function() {
+        var o = Membership.__super__.constructor.apply(this, arguments);
+        if (o) return o;
       }
+    });
 
-      if (Membership && Membership.all) {
-        Membership.all.reset([]);
-        Membership.all = null;
+    Settings = Model.extend({
+      constructor: function() {
+        var o = Settings.__super__.constructor.apply(this, arguments);
+        if (o) return o;
       }
+    });
 
-      User = Model.extend({
-        constructor: function() {
-          var o = User.__super__.constructor.apply(this, arguments);
-          if (o) return o;
-        }
-      });
+    Users = Collection.extend({model: User});
+    Memberships = Collection.extend({model: Membership});
 
-      Membership = Model.extend({
-        constructor: function() {
-          var o = Membership.__super__.constructor.apply(this, arguments);
-          if (o) return o;
-        }
-      });
-
-      Settings = Model.extend({
-        constructor: function() {
-          var o = Settings.__super__.constructor.apply(this, arguments);
-          if (o) return o;
-        }
-      });
-
-      Users = Collection.extend({model: User});
-      Memberships = Collection.extend({model: Membership});
-
-      Membership.has().one('user', {
+    Membership.has()
+      .one('user', {
         model: User,
         inverse: 'memberships'
       });
 
-      User.has().one('settings', {
-        model: Settings,
-        inverse: 'user'
-      });
-
-      Settings.has().one('user', {
+    Settings.has()
+      .one('user', {
         model: User,
         inverse: 'settings'
       });
 
-    }
+    User.has()
+      .one('settings', {
+        model: Settings,
+        inverse: 'user'
+      })
+      .many('memberships', {
+        collection: Memberships,
+        inverse: 'user'
+      });
+  };
 
-  });
+  module('One', {setup: setup});
 
   test('Setting associations.', function() {
     var user = new User({id: 5});
@@ -126,6 +130,34 @@
     ok(!user.get('settings_id'));
     ok(!settings.user);
     ok(!settings.get('user_id'));
+  });
+
+  module('Many', {setup: setup});
+
+  test('Many is initialized only once.', function() {
+    var user = new User();
+    var memberships = user.memberships;
+    User.all.trigger('add', user, User.all);
+    ok(user.memberships === memberships);
+  });
+
+  test('Source is removed after parsing.', function() {
+    var user = new User({memberships: [{id: 1}]}, {parse: true});
+    strictEqual(user.memberships.length, 1);
+    strictEqual(user.memberships.at(0).id, 1);
+    ok(!user.get('memberships'));
+  });
+
+  test('Associations are triggered on "change".', 2, function() {
+    var user = new User({id: 2});
+    var membership = new Membership({id: 3});
+    user.on('associate:memberships', function() {
+      strictEqual(membership.get('x'), true);
+    });
+    membership.on('associate:user', function() {
+      strictEqual(membership.get('x'), true);
+    });
+    membership.set({user_id: 2, x: true});
   });
 
 })();

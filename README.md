@@ -10,6 +10,9 @@
 Supermodel is a small extension for tracking collections, models and their
 associations with [Backbonejs][backbone].
 
+*Note: This is alpha software.  A similar version has been used at pathable for
+quite some time but your milage may vary.*
+
 #Model
 
 `Supermodel.Model` is an extension of `Backbone.Model` that handles the

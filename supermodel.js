@@ -4,7 +4,7 @@
   var root = this;
 
   // Expose Supermodel on the global object.
-  var Supermodel = root.Supermodel = {};
+  var Supermodel = root.Supermodel = {VERSION: '0.0.1'};
 
   // Use Backbone's `extend` for sugar.
   var extend = Backbone.Model.extend;
@@ -79,10 +79,9 @@
     },
 
     replace: function(model, other) {
-      var current, options = this.options;
       if (!model) return;
-
-      current = model[options.name];
+      var options = this.options;
+      var current = model[options.name];
 
       // Are these the current attributes?
       if (current && current.attributes === other) return;
@@ -119,6 +118,70 @@
 
   });
 
+  var Many = Association.extend({
+
+    constructor: function() {
+      Many.__super__.constructor.apply(this, arguments);
+      var options = _.defaults(this.options, {source: this.options.name});
+      this.all
+        .on('associate:' + options.name, this._associate, this)
+        .on('dissociate:' + options.name, this._dissociate, this);
+    },
+
+    parse: function(model, resp, xhr) {
+      var options = this.options;
+      var models = resp[options.source];
+      if (!models) return;
+      delete resp[this.options.source];
+      this.initialize(model);
+      model[this.options.name].reset(models);
+    },
+
+    initialize: function(model) {
+      var options = this.options;
+      if (model[this.options.name]) return;
+      var collection = model[options.name] = new options.collection([], {
+        comparator: options.comparator
+      })
+      .on('add', this.add, this)
+      .on('remove', this.remove, this)
+      .on('reset', this.reset, this);
+      collection.owner = model;
+    },
+
+    add: function(model, collection) {
+      if (!model || !collection) return;
+      this.associate(model, collection.owner);
+    },
+
+    remove: function(model, collection) {
+      if (!model || !collection) return;
+      this.dissociate(model, collection.owner);
+    },
+
+    reset: function(collection) {
+      if (!collection) return;
+      collection.each(function(model) {
+        this.associate(model, collection.owner);
+      }, this);
+    },
+
+    _associate: function(model, other) {
+      if (!model || !other) return;
+      var name = this.options.name;
+      if (!model[name]) return;
+      model[name].add(other);
+    },
+
+    _dissociate: function(model, other) {
+      if (!model || !other) return;
+      var name = this.options.name;
+      if (!model[name]) return;
+      model[name].remove(other);
+    }
+
+  });
+
   // Avoid naming collisions by providing one entry point for associations.
   var Has = function(model) {
     this.model = model;
@@ -129,6 +192,12 @@
     one: function(name, options) {
       options.name = name;
       new One(this.model, options);
+      return this;
+    },
+
+    many: function(name, options) {
+      options.name = name;
+      new Many(this.model, options);
       return this;
     }
 
