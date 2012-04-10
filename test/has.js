@@ -1,6 +1,6 @@
 (function() {
 
-  var User, Users, Membership, Memberships, Settings;
+  var User, Users, Membership, Memberships, Settings, Group, Groups;
   var Model = Supermodel.Model;
   var Collection = Supermodel.Collection;
 
@@ -20,6 +20,11 @@
       Membership.all = null;
     }
 
+    if (Group && Group.all) {
+      Group.all.reset([]);
+      Group.all = null;
+    }
+
     User = Model.extend({
       constructor: function() {
         var o = User.__super__.constructor.apply(this, arguments);
@@ -34,6 +39,13 @@
       }
     });
 
+    Group = Model.extend({
+      constructor: function() {
+        var o = Group.__super__.constructor.apply(this, arguments);
+        if (o) return o;
+      }
+    });
+
     Settings = Model.extend({
       constructor: function() {
         var o = Settings.__super__.constructor.apply(this, arguments);
@@ -43,10 +55,15 @@
 
     Users = Collection.extend({model: User});
     Memberships = Collection.extend({model: Membership});
+    Groups = Collection.extend({model: Group});
 
     Membership.has()
       .one('user', {
         model: User,
+        inverse: 'memberships'
+      })
+      .one('group', {
+        model: Group,
         inverse: 'memberships'
       });
 
@@ -64,6 +81,16 @@
       .many('memberships', {
         collection: Memberships,
         inverse: 'user'
+      })
+      .many('contacts', {
+        source: 'users',
+        collection: Users
+      });
+
+    Group.has()
+      .many('memberships', {
+        collection: Memberships,
+        inverse: 'group'
       });
   };
 
@@ -158,6 +185,79 @@
       strictEqual(membership.get('x'), true);
     });
     membership.set({user_id: 2, x: true});
+  });
+
+  test('Update associations when reparsing.', function() {
+    var user = new User({
+      id: 1,
+      memberships: [{
+        id: 2,
+        group: {id: 3}
+      }]
+    }, {parse: true});
+    var membership = user.memberships.at(0);
+    strictEqual(membership.id, 2);
+    strictEqual(membership.group.id, 3);
+    user.parse({
+      memberships: [{
+        id: 4,
+        group: {id: 5}
+      }]
+    });
+    membership = user.memberships.at(0);
+    strictEqual(membership.id, 4);
+    strictEqual(membership.group.id, 5);
+  });
+
+  test('Many with source.', function() {
+    var user = new User({id: 1, users: [{id: 2}]}, {parse: true});
+    strictEqual(user.contacts.at(0).id, 2);
+  });
+
+  test('Many references correct inverse.', function() {
+    var user = new User({id: 1, memberships: [{id: 2}]}, {parse: true});
+    var membership = user.memberships.at(0);
+    ok(membership.user === user);
+    strictEqual(membership.id, 2);
+  });
+
+  test('Dissociate when removed.', function() {
+    var user = new User({id: 1, memberships: [{id: 2}]}, {parse: true});
+    var membership = user.memberships.at(0);
+    ok(membership.user === user);
+    user.memberships.remove(membership);
+    ok(!membership.user);
+  });
+
+  test('Associate on add.', function() {
+    var user = new User();
+    var membership = new Membership();
+    user.memberships.add(membership);
+    ok(membership.user === user);
+  });
+
+  test('Add on associate.', function() {
+    var user = new User({id: 1});
+    var membership = new Membership();
+    membership.parse({user: {id: 1}});
+    ok(user.memberships.at(0) === membership, 'Membership added.');
+    ok(membership.user === user, 'User property set.');
+  });
+
+  test('Remove on dissociate.', function() {
+    var user = new User({id: 1, memberships: [{id: 2}]}, {parse: true});
+    strictEqual(user.memberships.length, 1);
+    var membership = user.memberships.at(0);
+    membership.unset('user_id');
+    strictEqual(user.memberships.length, 0);
+    ok(!membership.user);
+  });
+
+  test('Set id attribute.', function() {
+    var user = new User({id: 1, memberships: [{id: 2}]}, {parse: true});
+    strictEqual(user.memberships.at(0).get('user_id'), 1);
+    var membership = new Membership({id: 3, users: [{id: 4}]}, {parse: true});
+    strictEqual(membership.get('user_id'), 4);
   });
 
 })();

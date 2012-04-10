@@ -81,6 +81,14 @@ var User = Supermodel.Model.extend({
 });
 ```
 
+For what it's worth, this is much nicer in Coffeescript.
+
+```coffeescript
+class User
+  constructor:
+    return o if (o = super)?
+```
+
 *If you don't include this in your model's constructor you will get back
 uninitialized models.*
 

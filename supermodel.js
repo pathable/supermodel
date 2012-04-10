@@ -58,8 +58,9 @@
       var attrs = resp[this.options.source];
       if (!attrs) return;
       delete resp[this.options.source];
-      model[this.options.name] = this.create(attrs);
-      resp[this.options.id] = model.id;
+      var other = model[this.options.name] = this.create(attrs);
+      this.associate(other, model);
+      resp[this.options.id] = other.id;
     },
 
     change: function(model) {
@@ -100,8 +101,8 @@
       if (!other) return;
 
       // Set up the new association.
-      model[options.name] = other;
       model.set(options.id, other.id);
+      model[options.name] = other;
       this.associate(other, model);
     },
 
@@ -134,19 +135,22 @@
       if (!models) return;
       delete resp[this.options.source];
       this.initialize(model);
-      model[this.options.name].reset(models);
+      var collection = model[this.options.name];
+      collection.reset(collection.parse(models), {parse: true});
     },
 
     initialize: function(model) {
       var options = this.options;
-      if (model[this.options.name]) return;
-      var collection = model[options.name] = new options.collection([], {
-        comparator: options.comparator
-      })
-      .on('add', this.add, this)
-      .on('remove', this.remove, this)
-      .on('reset', this.reset, this);
-      collection.owner = model;
+      var collection = model[options.name];
+      if (!collection) {
+        collection = model[options.name] = new options.collection([], {
+          comparator: options.comparator
+        })
+        .on('add', this.add, this)
+        .on('remove', this.remove, this)
+        .on('reset', this.reset, this);
+        collection.owner = model;
+      }
     },
 
     add: function(model, collection) {
