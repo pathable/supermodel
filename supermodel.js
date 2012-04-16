@@ -50,17 +50,16 @@
     },
 
     initialize: function(model) {
+      this.parse(model, model.attributes);
       var id = model.get(this.options.id);
       if (id != null) this.replace(model, id);
     },
 
     parse: function(model, resp) {
+      if (!_.has(resp, this.options.source)) return;
       var attrs = resp[this.options.source];
-      if (!attrs) return;
       delete resp[this.options.source];
-      var other = model[this.options.name] = this.create(attrs);
-      this.associate(other, model);
-      resp[this.options.id] = other.id;
+      this.replace(model, attrs);
     },
 
     change: function(model) {
@@ -84,11 +83,11 @@
       var options = this.options;
       var current = model[options.name];
 
-      // Are these the current attributes?
-      if (current && current.attributes === other) return;
-      other = this.create(other);
+      // If `other` is a primitive, assume it's an id.
+      if (other != null && !_.isObject(other)) other = {id: other};
 
-      // Bail, we already have the correct model.
+      // Is `other` already the current model?
+      if (other && !(other instanceof Model)) other = new options.model(other);
       if (current === other) return;
 
       // Tear down the current association.
@@ -104,53 +103,51 @@
       model.set(options.id, other.id);
       model[options.name] = other;
       this.associate(other, model);
-    },
-
-    // Create a model from a hash of attributes or an id.
-    create: function(attrs) {
-      var options = this.options;
-      if (!attrs || (attrs instanceof Model)) return attrs;
-
-      // If `attrs` is a primitive, assume it's an id.
-      if (!_.isObject(attrs)) attrs = {id: attrs};
-      attrs = new options.model(attrs, {parse: true});
-      return attrs;
     }
 
   });
 
+  // Many - The many side of a one-to-many association.
   var Many = Association.extend({
 
     constructor: function() {
       Many.__super__.constructor.apply(this, arguments);
       var options = _.defaults(this.options, {source: this.options.name});
       this.all
+        .on('add', this.create, this)
         .on('associate:' + options.name, this._associate, this)
         .on('dissociate:' + options.name, this._dissociate, this);
     },
 
-    parse: function(model, resp, xhr) {
-      var options = this.options;
-      var models = resp[options.source];
+    parse: function(model, resp) {
+      var models = resp[this.options.source];
       if (!models) return;
       delete resp[this.options.source];
-      this.initialize(model);
       var collection = model[this.options.name];
-      collection.reset(collection.parse(models), {parse: true});
+      collection.reset(collection.parse(models));
+    },
+
+    create: function(model, all) {
+      var options = this.options;
+      var collection = model[options.name];
+      if (collection) return;
+
+      // Create the collection for storing the associated models.  Listen for
+      // "add", "remove", and "reset" events and act accordingly.
+      collection = model[options.name] = new options.collection([], {
+        comparator: options.comparator
+      })
+      .on('add', this.add, this)
+      .on('remove', this.remove, this)
+      .on('reset', this.reset, this);
+
+      // We'll need to know what model "owns" this collection in order to
+      // handle events that it triggers.
+      collection.owner = model;
     },
 
     initialize: function(model) {
-      var options = this.options;
-      var collection = model[options.name];
-      if (!collection) {
-        collection = model[options.name] = new options.collection([], {
-          comparator: options.comparator
-        })
-        .on('add', this.add, this)
-        .on('remove', this.remove, this)
-        .on('reset', this.reset, this);
-        collection.owner = model;
-      }
+      this.parse(model, model.attributes);
     },
 
     add: function(model, collection) {
@@ -167,6 +164,14 @@
       if (!collection) return;
       collection.each(function(model) {
         this.associate(model, collection.owner);
+      }, this);
+    },
+
+    destroy: function(model) {
+      var collection = model[this.options.name];
+      if (!collection) return;
+      collection.each(function(other) {
+        this.dissociate(other, model);
       }, this);
     },
 
@@ -207,8 +212,8 @@
 
   });
 
-  // Provide base functionality for tracking a source collection and producing
-  // a target collection with models that match a certain criteria.
+  // Provide common functionality for tracking a source collection and
+  // producing a target collection with models that match a certain criteria.
   var Set = Supermodel.Set = function(source, options) {
     this.source = source;
     this.options = options;
@@ -413,17 +418,10 @@
       return true;
     },
 
-    // Supermodels initialize relationships during parse.  The data associated
-    // with related models will be removed.
-    parse: function(resp, xhr) {
-      // Since parse is called before models are added to `all` collections we
-      // must walk the inheritance chain and trigger parse on each.
-      var ctor = this.constructor;
-      while (ctor && ctor !== Model) {
-        if (ctor.all) ctor.all.trigger('parse', this, resp, xhr);
-        ctor = ctor.__super__ && ctor.__super__.constructor;
-      }
-      return resp;
+    // Associations are initialized during `parse`.  They listen for the
+    // `'parse'` event and remove the appropriate properties after parsing.
+    parse: function(resp) {
+      this.trigger('parse', this, resp);
     }
 
   }, {

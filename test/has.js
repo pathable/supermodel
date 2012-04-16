@@ -15,6 +15,11 @@
       User.all = null;
     }
 
+    if (Settings && Settings.all) {
+      Settings.all.reset([]);
+      Settings.all = null;
+    }
+
     if (Membership && Membership.all) {
       Membership.all.reset([]);
       Membership.all = null;
@@ -125,8 +130,9 @@
     ok(membership.user === user);
   });
 
-  test('Parse without id.', function() {
-    var membership = new Membership({id: 1, user: {id: 2}}, {parse: true});
+  test('Parse without id attribute.', function() {
+    var membership = new Membership({id: 1});
+    membership.parse({user: {id: 2}});
     var user = membership.user;
     ok(user instanceof User);
     strictEqual(user.id, 2);
@@ -162,16 +168,22 @@
   module('Many', {setup: setup});
 
   test('Many is initialized only once.', function() {
-    var user = new User();
+    var user = new User;
     var memberships = user.memberships;
     User.all.trigger('add', user, User.all);
     ok(user.memberships === memberships);
   });
 
   test('Source is removed after parsing.', function() {
-    var user = new User({memberships: [{id: 1}]}, {parse: true});
+    var user = new User;
+    user.parse({memberships: [{id: 1}]});
     strictEqual(user.memberships.length, 1);
     strictEqual(user.memberships.at(0).id, 1);
+    ok(!user.get('memberships'));
+
+    user = new User({memberships: [{id: 3}]});
+    strictEqual(user.memberships.length, 1);
+    strictEqual(user.memberships.at(0).id, 3);
     ok(!user.get('memberships'));
   });
 
@@ -187,42 +199,32 @@
     membership.set({user_id: 2, x: true});
   });
 
-  test('Update associations when reparsing.', function() {
-    var user = new User({
-      id: 1,
-      memberships: [{
-        id: 2,
-        group: {id: 3}
-      }]
-    }, {parse: true});
+  test('Update associations on parse.', function() {
+    var user = new User({id: 1});
+    user.parse({memberships: [{id: 2, group: {id: 3}}]});
     var membership = user.memberships.at(0);
     strictEqual(membership.id, 2);
     strictEqual(membership.group.id, 3);
-    user.parse({
-      memberships: [{
-        id: 4,
-        group: {id: 5}
-      }]
-    });
+    user.parse({memberships: [{id: 4, group: {id: 5}}]});
     membership = user.memberships.at(0);
     strictEqual(membership.id, 4);
     strictEqual(membership.group.id, 5);
   });
 
   test('Many with source.', function() {
-    var user = new User({id: 1, users: [{id: 2}]}, {parse: true});
+    var user = new User({id: 1, users: [{id: 2}]});
     strictEqual(user.contacts.at(0).id, 2);
   });
 
   test('Many references correct inverse.', function() {
-    var user = new User({id: 1, memberships: [{id: 2}]}, {parse: true});
+    var user = new User({id: 1, memberships: [{id: 2}]});
     var membership = user.memberships.at(0);
     ok(membership.user === user);
     strictEqual(membership.id, 2);
   });
 
   test('Dissociate when removed.', function() {
-    var user = new User({id: 1, memberships: [{id: 2}]}, {parse: true});
+    var user = new User({id: 1, memberships: [{id: 2}]});
     var membership = user.memberships.at(0);
     ok(membership.user === user);
     user.memberships.remove(membership);
@@ -245,7 +247,7 @@
   });
 
   test('Remove on dissociate.', function() {
-    var user = new User({id: 1, memberships: [{id: 2}]}, {parse: true});
+    var user = new User({id: 1, memberships: [{id: 2}]});
     strictEqual(user.memberships.length, 1);
     var membership = user.memberships.at(0);
     membership.unset('user_id');
@@ -254,10 +256,93 @@
   });
 
   test('Set id attribute.', function() {
-    var user = new User({id: 1, memberships: [{id: 2}]}, {parse: true});
+    var user = new User({id: 1, memberships: [{id: 2}]});
     strictEqual(user.memberships.at(0).get('user_id'), 1);
-    var membership = new Membership({id: 3, users: [{id: 4}]}, {parse: true});
+    var membership = new Membership({id: 3, user: {id: 4}});
     strictEqual(membership.get('user_id'), 4);
+  });
+
+  test('Use id attribute.', function() {
+    var membership = new Membership({user_id: 1});
+    strictEqual(membership.user.id, 1);
+  });
+
+  test('Watch id attribute.', function() {
+    var membership = new Membership;
+    membership.set({user_id: 1});
+    strictEqual(membership.user.id, 1);
+  });
+
+  test('Do not use null/undefined id attribute.', function() {
+    var membership = new Membership;
+    membership.set({user_id: null});
+    ok(!membership.user);
+    membership.set({user_id: undefined});
+    ok(!membership.user);
+    membership.unset('user_id');
+    ok(!membership.user);
+  });
+
+  test('Unset id attribute.', function() {
+    var membership = new Membership({user: {id: 1}});
+    membership.unset('user_id');
+    ok(!membership.get('user_id'));
+    ok(!membership.user);
+  });
+
+  // TODO: Petition for better reset notifications.
+  false && test('Dissociate on reset.', 0, function() {
+    var user = new User({memberships: [{id: 1}]});
+    var membership = user.memberships.at(0);
+    user.memberships.reset([]);
+    strictEqual(user.memberships.length, 0);
+    ok(!membership.user);
+  });
+
+  test('Remove id attribute on dissociate.', function() {
+    var membership = new Membership({id: 1, user_id: 2});
+    strictEqual(membership.get('user_id'), 2);
+    membership.user.memberships.remove(membership);
+    ok(!membership.get('user_id'));
+  });
+
+  test('Associate on reset.', function() {
+    var user = new User;
+    var membership = new Membership;
+    user.memberships.reset([membership]);
+    strictEqual(user.memberships.length, 1);
+    ok(user.memberships.at(0) === membership);
+    ok(membership.user === user);
+  });
+
+  test('Remove on destroy.', function() {
+    var membership = new Membership({user_id: 1});
+    membership.user.trigger('destroy', membership.user);
+    ok(!membership.user);
+    ok(!membership.get('user_id'));
+  });
+
+  test('Add on creation.', function() {
+    var user = new User({id: 1});
+    var membership = new Membership({id: 2, user: {id: 1}});
+    strictEqual(user.memberships.length, 1);
+    ok(user.memberships.at(0) === membership);
+  });
+
+  test('Add on set.', function() {
+    var user = new User({id: 1});
+    var membership = new Membership({id: 2});
+    membership.set({user_id: 1});
+    strictEqual(user.memberships.length, 1);
+    ok(user.memberships.at(0) === membership);
+    ok(membership.user === user);
+  });
+
+  test('Remove on set.', function() {
+    var user = new User({id: 1, memberships: [{id: 2}]});
+    var membership = user.memberships.at(0);
+    membership.set({user_id: null});
+    strictEqual(user.memberships.length, 0);
   });
 
 })();
