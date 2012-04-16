@@ -379,6 +379,7 @@
       // attributes provided.
       if (attrs && (cid = attrs._cid)) return all.getByCid(cid);
       if (attrs && (id = attrs.id) && (model = all.get(id))) {
+        model.parse(attrs);
         model.set(attrs);
         return model;
       }

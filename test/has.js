@@ -1,66 +1,45 @@
 (function() {
 
-  var User, Users, Membership, Memberships, Settings, Group, Groups;
   var Model = Supermodel.Model;
   var Collection = Supermodel.Collection;
 
+  var User = Model.extend({
+    constructor: function() {
+      var o = User.__super__.constructor.apply(this, arguments);
+      if (o) return o;
+    }
+  });
+
+  var Membership = Model.extend({
+    constructor: function() {
+      var o = Membership.__super__.constructor.apply(this, arguments);
+      if (o) return o;
+    }
+  });
+
+  var Group = Model.extend({
+    constructor: function() {
+      var o = Group.__super__.constructor.apply(this, arguments);
+      if (o) return o;
+    }
+  });
+
+  var Settings = Model.extend({
+    constructor: function() {
+      var o = Settings.__super__.constructor.apply(this, arguments);
+      if (o) return o;
+    }
+  });
+
+  var Users = Collection.extend({model: User});
+  var Memberships = Collection.extend({model: Membership});
+  var Groups = Collection.extend({model: Group});
+
   var setup = function() {
-    if (Model.all) {
-      Model.all.reset([]);
-      Model.all = null;
-    }
-
-    if (User && User.all) {
-      User.all.reset([]);
-      User.all = null;
-    }
-
-    if (Settings && Settings.all) {
-      Settings.all.reset([]);
-      Settings.all = null;
-    }
-
-    if (Membership && Membership.all) {
-      Membership.all.reset([]);
-      Membership.all = null;
-    }
-
-    if (Group && Group.all) {
-      Group.all.reset([]);
-      Group.all = null;
-    }
-
-    User = Model.extend({
-      constructor: function() {
-        var o = User.__super__.constructor.apply(this, arguments);
-        if (o) return o;
-      }
-    });
-
-    Membership = Model.extend({
-      constructor: function() {
-        var o = Membership.__super__.constructor.apply(this, arguments);
-        if (o) return o;
-      }
-    });
-
-    Group = Model.extend({
-      constructor: function() {
-        var o = Group.__super__.constructor.apply(this, arguments);
-        if (o) return o;
-      }
-    });
-
-    Settings = Model.extend({
-      constructor: function() {
-        var o = Settings.__super__.constructor.apply(this, arguments);
-        if (o) return o;
-      }
-    });
-
-    Users = Collection.extend({model: User});
-    Memberships = Collection.extend({model: Membership});
-    Groups = Collection.extend({model: Group});
+    User.all = null;
+    Settings.all = null;
+    Membership.all = null;
+    Group.all = null;
 
     Membership.has()
       .one('user', {
@@ -343,6 +322,12 @@
     var membership = user.memberships.at(0);
     membership.set({user_id: null});
     strictEqual(user.memberships.length, 0);
+  });
+
+  test('Parse nested associations.', function() {
+    var user = new User({id: 1, memberships: [{id: 3}]});
+    user.parse({memberships: [{id: 3, group: {id: 2}}]});
+    strictEqual(user.memberships.at(0).group.id, 2);
   });
 
 })();
