@@ -75,7 +75,7 @@
       var other = model[this.options.name];
       if (!other) return;
       this.remove(model);
-      this.dissociate(other, model)
+      this.dissociate(other, model);
     },
 
     replace: function(model, other) {
@@ -216,8 +216,8 @@
   // producing a target collection with models that match a certain criteria.
   var Set = Supermodel.Set = function(source, options) {
     this.source = source;
-    this.options = options;
-    this.target = new (options.collection || Collection)([], {
+    this.options = _.defaults(options, {collection: Collection});
+    this.target = new options.collection([], {
       source: source,
       comparator: options.comparator
     });
@@ -296,7 +296,7 @@
 
     add: function(model, source) {
       var value = model.get(this.options.attr);
-      this.counts[value] || (this.counts[value] = 0);
+      if (!this.counts[value]) this.counts[value] = 0;
       if (!(this.counts[value]++)) this.target.add(this.models[value] = model);
     },
 
@@ -315,7 +315,7 @@
       this.counts = {};
       source.each(function(model) {
         var value = model.get(this.options.attr);
-        this.counts[value] || (this.counts[value] = 0);
+        if (!this.counts[value]) this.counts[value] = 0;
         if (!(this.counts[value]++)) this.models[value] = model;
       }, this);
       this.target.reset(_.values(this.models));

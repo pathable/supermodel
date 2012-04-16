@@ -147,14 +147,14 @@
   module('Many', {setup: setup});
 
   test('Many is initialized only once.', function() {
-    var user = new User;
+    var user = new User();
     var memberships = user.memberships;
     User.all.trigger('add', user, User.all);
     ok(user.memberships === memberships);
   });
 
   test('Source is removed after parsing.', function() {
-    var user = new User;
+    var user = new User();
     user.parse({memberships: [{id: 1}]});
     strictEqual(user.memberships.length, 1);
     strictEqual(user.memberships.at(0).id, 1);
@@ -247,13 +247,13 @@
   });
 
   test('Watch id attribute.', function() {
-    var membership = new Membership;
+    var membership = new Membership();
     membership.set({user_id: 1});
     strictEqual(membership.user.id, 1);
   });
 
   test('Do not use null/undefined id attribute.', function() {
-    var membership = new Membership;
+    var membership = new Membership();
     membership.set({user_id: null});
     ok(!membership.user);
     membership.set({user_id: undefined});
@@ -270,13 +270,15 @@
   });
 
   // TODO: Petition for better reset notifications.
-  false && test('Dissociate on reset.', 0, function() {
-    var user = new User({memberships: [{id: 1}]});
-    var membership = user.memberships.at(0);
-    user.memberships.reset([]);
-    strictEqual(user.memberships.length, 0);
-    ok(!membership.user);
-  });
+  if (false) {
+    test('Dissociate on reset.', 0, function() {
+      var user = new User({memberships: [{id: 1}]});
+      var membership = user.memberships.at(0);
+      user.memberships.reset([]);
+      strictEqual(user.memberships.length, 0);
+      ok(!membership.user);
+    });
+  }
 
   test('Remove id attribute on dissociate.', function() {
     var membership = new Membership({id: 1, user_id: 2});
@@ -286,8 +288,8 @@
   });
 
   test('Associate on reset.', function() {
-    var user = new User;
-    var membership = new Membership;
+    var user = new User();
+    var membership = new Membership();
     user.memberships.reset([membership]);
     strictEqual(user.memberships.length, 1);
     ok(user.memberships.at(0) === membership);
