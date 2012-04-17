@@ -3,13 +3,16 @@
   // The global object.
   var root = this;
 
-  // Expose Supermodel on the global object.
+  // Expose Supermodel to the global object.
   var Supermodel = root.Supermodel = {VERSION: '0.0.1'};
 
   // Use Backbone's `extend` for sugar.
   var extend = Backbone.Model.extend;
 
-  // Track associations between models.
+  // # Association
+  //
+  // Track associations between models.  Associated attributes are used and
+  // then removed during `parse`.
   var Association = Supermodel.Association = function(model, options) {
     this.model = model;
     this.options = options || {};
@@ -24,11 +27,15 @@
 
   _.extend(Association.prototype, {
 
+    // Notify `model` of its association with `other` using the `inverse`
+    // option.
     associate: function(model, other) {
       if (!this.options.inverse) return;
       model.trigger('associate:' + this.options.inverse, model, other);
     },
 
+    // Notify `model` of its dissociation with `other` using the `inverse`
+    // option.
     dissociate: function(model, other) {
       if (!this.options.inverse) return;
       model.trigger('dissociate:' + this.options.inverse, model, other);
@@ -36,11 +43,18 @@
 
   });
 
+  // ## One
+  //
+  // One side of a one-to-one or one-to-many association.
   var One = Association.extend({
 
-    constructor: function() {
+    // Default options:
+    //
+    // * id - The associated id is stored here.  Defaults to `name` + '_id'.
+    // * source - Nested data is found in this attribute.  Defaults to `name`.
+    constructor: function(model, options) {
       One.__super__.constructor.apply(this, arguments);
-      var options = this.options;
+      options = this.options;
       _.defaults(options, {
         source: options.name,
         id: options.name + '_id'
@@ -71,6 +85,7 @@
       this.replace(model, null);
     },
 
+    // When a model is destroyed, its association should be removed.
     destroy: function(model) {
       var other = model[this.options.name];
       if (!other) return;
@@ -107,12 +122,16 @@
 
   });
 
-  // Many - The many side of a one-to-many association.
+  // # Many
+  // The many side of a one-to-many association.
   var Many = Association.extend({
 
-    constructor: function() {
+    // Default options:
+    //
+    // * source - Nested data is stored in this attribute.  Defaults to `name`.
+    constructor: function(model, options) {
       Many.__super__.constructor.apply(this, arguments);
-      var options = _.defaults(this.options, {source: this.options.name});
+      options = _.defaults(this.options, {source: this.options.name});
       this.all
         .on('add', this.create, this)
         .on('associate:' + options.name, this._associate, this)
