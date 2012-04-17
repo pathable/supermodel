@@ -36,10 +36,10 @@
   var Groups = Collection.extend({model: Group});
 
   var setup = function() {
-    User.all = null;
-    Settings.all = null;
-    Membership.all = null;
-    Group.all = null;
+    User.all = User.associations = null;
+    Settings.all = Settings.associations = null;
+    Membership.all = Membership.associations = null;
+    Group.all = Group.associations = null;
 
     Membership.has()
       .one('user', {
@@ -87,6 +87,14 @@
         through: 'memberships'
       });
   };
+
+  module('Associations', {setup: setup});
+
+  test('Adding duplicate associations throws.', function() {
+    raises(function() {
+      User.has().one('settings', {});
+    }, 'Association already exists: settings');
+  });
 
   module('One', {setup: setup});
 

@@ -13,9 +13,14 @@
   //
   // Track associations between models.  Associated attributes are used and
   // then removed during `parse`.
-  var Association = Supermodel.Association = function(model, options) {
+  var Association = function(model, options) {
     this.model = model;
     this.options = options || {};
+    var associations = (model.associations || (model.associations = {}));
+    if (associations[options.name]) {
+      throw new Error('Association already exists: ' + options.name);
+    }
+    associations[options.name] = this;
     var all = this.all = (model.all || (model.all = new Collection()));
     if (this.initialize) all.on('initialize', this.initialize, this);
     if (this.change) all.on('change', this.change, this);
@@ -186,6 +191,7 @@
     },
 
     destroy: function(model) {
+      if (!model) return;
       var collection = model[this.options.name];
       if (!collection) return;
       collection.each(function(other) {
@@ -214,6 +220,9 @@
   // One side of a many-to-many association.
   var ManyThrough = Association.extend({
 
+    // Options:
+    // * source - The property where models are found.
+    // * through - The property name where the through collection is stored.
     constructor: function(model, options) {
       ManyThrough.__super__.constructor.apply(this, arguments);
       options = _.defaults(this.options, {
@@ -239,6 +248,7 @@
     },
 
     initialize: function(model) {
+      if (!model) return;
       this.reset(model[this.options.through]);
     },
 
@@ -271,7 +281,7 @@
       through.owner[this.options.name].add(other);
     },
 
-    // Remove dissociated models.
+    // Remove dissociated models, taking care to check for other instances.
     _dissociate: function(through, model, other) {
       if (!through || !model || !other) return;
       var exists = through.any(function(o) {
@@ -306,7 +316,7 @@
 
   // Provide common functionality for tracking a source collection and
   // producing a target collection with models that match a certain criteria.
-  var Set = Supermodel.Set = function(source, options) {
+  var Set = function(source, options) {
     this.source = source;
     this.options = _.defaults(options, {collection: Collection});
     this.target = new options.collection([], {
