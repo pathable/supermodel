@@ -13,6 +13,7 @@ module.exports = function(grunt) {
         ok: true,
         test: true,
         module: true,
+        raises: true,
         deepEqual: true,
         strictEqual: true,
 
