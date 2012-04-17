@@ -21,6 +21,7 @@
     if (this.change) all.on('change', this.change, this);
     if (this.parse) all.on('parse', this.parse, this);
     if (this.destroy) all.on('destroy', this.destroy, this);
+    if (this.create) all.on('add', this.create, this);
   };
 
   Association.extend = extend;
@@ -48,8 +49,7 @@
   // One side of a one-to-one or one-to-many association.
   var One = Association.extend({
 
-    // Default options:
-    //
+    // Options:
     // * id - The associated id is stored here.  Defaults to `name` + '_id'.
     // * source - Nested data is found in this attribute.  Defaults to `name`.
     constructor: function(model, options) {
@@ -126,14 +126,13 @@
   // The many side of a one-to-many association.
   var Many = Association.extend({
 
-    // Default options:
-    //
+    // Options:
     // * source - Nested data is stored in this attribute.  Defaults to `name`.
     constructor: function(model, options) {
+      if (options.through) return new ManyThrough(model, options);
       Many.__super__.constructor.apply(this, arguments);
       options = _.defaults(this.options, {source: this.options.name});
       this.all
-        .on('add', this.create, this)
         .on('associate:' + options.name, this._associate, this)
         .on('dissociate:' + options.name, this._dissociate, this);
     },
@@ -209,6 +208,80 @@
     }
 
   });
+
+  // # ManyThrough
+  //
+  // One side of a many-to-many association.
+  var ManyThrough = Association.extend({
+
+    constructor: function(model, options) {
+      ManyThrough.__super__.constructor.apply(this, arguments);
+      options = _.defaults(this.options, {
+        source: this.options.name
+      });
+      this.through = model[options.through];
+      this._associate = andThis(this._associate, this);
+      this._dissociate = andThis(this._dissociate, this);
+    },
+
+    create: function(model) {
+      var collection = new this.options.collection([], {
+        comparator: this.options.comparator
+      });
+      collection.owner = model;
+      model[this.options.name] = collection;
+      model[this.options.through]
+        .on('add', this.add, this)
+        .on('remove', this.remove, this)
+        .on('reset', this.reset, this)
+        .on('associate:' + this.options.source, this._associate)
+        .on('dissociate:' + this.options.source, this._dissociate);
+    },
+
+    initialize: function(model) {
+      this.reset(model[this.options.through]);
+    },
+
+    add: function(model, through) {
+      if (!model || !through) return;
+      if (!(model = model[this.options.source])) return;
+      through.owner[this.options.name].add(model);
+    },
+
+    remove: function(model, through) {
+      if (!model || !through) return;
+      if (!(model = model[this.options.source])) return;
+      var exists = through.any(function(o) {
+        return o[this.options.source] === model;
+      }, this);
+      if (!exists) through.owner[this.options.name].remove(model);
+    },
+
+    reset: function(through) {
+      if (!through) return;
+      var options = this.options;
+      var owner = through.owner;
+      var models = _.compact(_.uniq(_.pluck(through.models, options.source)));
+      through.owner[options.name].reset(models);
+    },
+
+    // Add associated models.
+    _associate: function(through, model, other) {
+      if (!through || !model || !other) return;
+      through.owner[this.options.name].add(other);
+    },
+
+    // Remove dissociated models.
+    _dissociate: function(through, model, other) {
+      if (!through || !model || !other) return;
+      var exists = through.any(function(o) {
+        return o[this.options.source] === other;
+      }, this);
+      if (!exists) through.owner[this.options.name].remove(other);
+    }
+
+  });
+
 
   // Avoid naming collisions by providing one entry point for associations.
   var Has = function(model) {
@@ -475,5 +548,14 @@
     }
 
   });
+
+  // Capture a functions context (this), prepend it to the arguments, and call
+  // the function with the provided context.
+  var andThis = function(func, context) {
+    return function() {
+      var args = [this].concat(_.toArray(arguments));
+      return func.apply(context, args);
+    };
+  };
 
 }).call(this, Backbone);

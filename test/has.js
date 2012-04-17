@@ -69,12 +69,22 @@
       .many('contacts', {
         source: 'users',
         collection: Users
+      })
+      .many('groups', {
+        source: 'group',
+        collection: Groups,
+        through: 'memberships'
       });
 
     Group.has()
       .many('memberships', {
         collection: Memberships,
         inverse: 'group'
+      })
+      .many('users', {
+        source: 'user',
+        collection: Users,
+        through: 'memberships'
       });
   };
 
@@ -330,6 +340,126 @@
     var user = new User({id: 1, memberships: [{id: 3}]});
     user.parse({memberships: [{id: 3, group: {id: 2}}]});
     strictEqual(user.memberships.at(0).group.id, 2);
+  });
+
+  module('Many - Through', {setup: setup});
+
+  test('Collection is initialized.', function() {
+    var user = new User({
+      memberships: [
+        {group: {id: 1}},
+        {group_id: 2},
+        {group: {id: 3}}
+      ]
+    });
+    strictEqual(user.groups.length, 3);
+    deepEqual(user.groups.pluck('id').sort(), [1, 2, 3]);
+  });
+
+  test('Models are uniqued.', function() {
+    var user = new User({
+      memberships: [
+        {group: {id: 1}},
+        {group_id: 1},
+        {group: {id: 2}}
+      ]
+    });
+    strictEqual(user.groups.length, 2);
+    strictEqual(user.groups.at(0).id, 1);
+  });
+
+  test('Handle reset.', function() {
+    var user = new User({memberships: [{group: {id: 1}}, {group: {id: 2}}]});
+    user.memberships.reset([{group: {id: 3}}, {group: {id: 4}}]);
+    strictEqual(user.groups.length, 2);
+    deepEqual(user.groups.pluck('id').sort(), [3, 4]);
+  });
+
+  test('Add models.', function() {
+    var user = new User();
+    user.memberships.add({group: {id: 1}});
+    user.memberships.add({group: {id: 2}});
+    strictEqual(user.groups.length, 2);
+    deepEqual(user.groups.pluck('id').sort(), [1, 2]);
+  });
+
+  test('Add duplicate models.', function() {
+    var user = new User({memberships: [{group: {id: 1}}]});
+    user.memberships.add({group: {id: 1}});
+    strictEqual(user.groups.length, 1);
+    strictEqual(user.groups.at(0).id, 1);
+  });
+
+  test('Remove models.', function() {
+    var user = new User({memberships: [{id: 1, group: {id: 2}}]});
+    strictEqual(user.groups.length, 1);
+    strictEqual(user.memberships.length, 1);
+    user.memberships.remove(1);
+    ok(user.groups.isEmpty());
+  });
+
+  test('Remove duplicate models.', function() {
+    var user = new User({memberships: [
+      {id: 1, group: {id: 2}},
+      {id: 3, group: {id: 2}}
+    ]});
+    strictEqual(user.groups.length, 1);
+    user.memberships.remove(3);
+    strictEqual(user.groups.length, 1);
+  });
+
+  test('Add from id attribute.', function() {
+    var user = new User({id: 1});
+    var group = new Group({id: 2});
+    ok(user.groups.isEmpty());
+    ok(group.users.isEmpty());
+    user.memberships.add({id: 3, group_id: 2, user_id: 1});
+    strictEqual(user.groups.length, 1);
+    strictEqual(group.users.length, 1);
+    ok(user.groups.at(0) === group);
+    ok(group.users.at(0) === user);
+  });
+
+  test('Add on change.', function() {
+    var group = new Group({id: 1});
+    var user = new User({id: 2, memberships: [{id: 3}]});
+    var membership = user.memberships.at(0);
+    ok(user.groups.isEmpty());
+    membership.set({group_id: 1});
+    ok(user.groups.at(0) === group);
+    ok(group.users.at(0) === user);
+  });
+
+  test('Remove on change.', function() {
+    var group = new Group({id: 1});
+    var user = new User({
+      id: 2,
+      memberships: [
+        {id: 3, group: {id: 1}},
+        {id: 4, group: {id: 1}}
+      ]
+    });
+    ok(user.groups.at(0) === group);
+    ok(group.users.at(0) === user);
+    user.memberships.get(3).unset('group_id');
+    ok(user.groups.at(0) === group);
+    ok(group.users.at(0) === user);
+    user.memberships.get(4).unset('group_id');
+    ok(user.groups.isEmpty());
+    ok(group.users.isEmpty());
+  });
+
+  test('Remove on destroy.', function() {
+    var group = new Group({id: 1});
+    var user = new User({id: 2, memberships: [{id: 3, group: {id: 1}}]});
+    var membership = user.memberships.at(0);
+    ok(group.users.at(0) === user);
+    ok(user.groups.at(0) === group);
+    membership.trigger('destroy', membership);
+    ok(user.memberships.isEmpty());
+    ok(user.groups.isEmpty());
+    ok(group.memberships.isEmpty());
+    ok(group.users.isEmpty());
   });
 
 })();

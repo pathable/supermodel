@@ -7,18 +7,18 @@
               | |
               |_|
 
-Supermodel is a small extension for tracking collections, models and their
+Supermodel is a small extension for tracking collections, models, and their
 associations with [Backbonejs][backbone].
 
 *Note: This is alpha software.  A similar version has been used at pathable for
 quite some time but your milage may vary.*
 
-#Model
+# Model
 
 `Supermodel.Model` is an extension of `Backbone.Model` that handles the
 tracking and creation of individual models.
 
-##Tracking
+## Model Tracking
 
 In large applications there are often multiple model objects representing the
 same server object.  This can cause synchronization problems and cause the
@@ -66,7 +66,7 @@ User.all.get(5) === impostor; // true
 It's generally best to not set ids explicitly but only rely on server data for
 this.
 
-###Boilerplate
+### Boilerplate
 
 To accomplish this, Supermodel will return the existing model from the
 constructor if it exists.  Unfortunately, you must include a small amount of
@@ -92,7 +92,7 @@ class User
 *If you don't include this in your model's constructor you will get back
 uninitialized models.*
 
-##Sub Models
+## Sub Models
 
 It's often convenient to return a collection of diverse attribute objects and
 ensure that models are created using a more specialized constructor if
@@ -112,7 +112,7 @@ possible.  Supermodel provides the `findConstructor` hook for this purpose.
   user instanceof Admin; // true
 ```
 
-###Inheritance
+### Inheritance
 
 Model tracking will work perfectly fine with inheritance assuming a few initial
 conditions.  As models are created, they're added to the `all` collection of
@@ -133,7 +133,7 @@ Admin.all.length; // 1
 User.all.length; // 2
 ```
 
-#Associations
+# Associations
 
 When initializing models or changing their attributes, there is often plenty of
 information to wire up associations between models.
@@ -163,12 +163,12 @@ attributes and the associated properties are set.  When a model becomes
 associated or dissociated with another model an `'associate'` or `'dissociate'`
 event is triggered, respectively.
 
-##has
+## has
 
 Associations are specified using `Model.has`.  This prevents naming collisions
 and provides a convenient extension point outside of `Model` itself.
 
-##one
+## one
 
 *Constructor.has().one(name, options)*
 
@@ -182,11 +182,11 @@ Membership.has().one('user', {model: User});
 The *name* argument is consistent across all association methods and specifies
 the property name to store the associated model.
 
-###model
+### model
 
 The constructor to use when creating the associated model.
 
-###inverse
+### inverse
 
 The name of the inverse association, for notifying the associated model of
 `'associate'` and `'dissociate'` events.
@@ -198,15 +198,15 @@ Membership.has().one('user', {
 });
 ```
 
-###id
+### id
 
 The attribute where the id of the associated model is stored.
 
-###source
+### source
 
 The attribute where the associated models attributes are stored.
 
-##many
+## many
 
 *Constructor.has().many(name, options)*
 
@@ -220,20 +220,20 @@ User.has().many('memberships', {
 });
 ```
 
-###collection
+### collection
 
 The collection constructor to use when creating the associated collection.
 
-###inverse
+### inverse
 
 The name of the inverse association, for notifying the associated models of
 `'associate'` and `'dissociate'` events.
 
-###source
+### source
 
 The attribute where the associated models' attributes are stored.
 
-###through
+### through
 
 Specify a through collection that models should be retrieved from.
 
