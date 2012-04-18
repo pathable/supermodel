@@ -92,8 +92,13 @@
 
   test('Adding duplicate associations throws.', function() {
     raises(function() {
-      User.has().one('settings', {});
-    }, 'Association already exists: settings');
+      User.has().one('settings', {
+        model: Settings,
+        inverse: 'user'
+      });
+    }, function(e) {
+      return e.message === 'Association already exists: settings';
+    });
   });
 
   module('One', {setup: setup});
