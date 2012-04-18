@@ -79,15 +79,4 @@
     deepEqual(new Model().toJSON(), {});
   });
 
-  test('model.match', function() {
-    var model = new Model({x: 1, y: 2});
-    ok(model.match({x: 1}));
-    ok(model.match({y: 2}));
-    ok(!model.match({x: 2}));
-    ok(!model.match({y: 1}));
-    ok(!model.match({}));
-    ok(model.match({x: 1, y: 2}));
-    ok(!model.match({x: 1, y: 2, z: 3}));
-  });
-
 })();

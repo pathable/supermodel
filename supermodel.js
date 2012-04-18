@@ -511,16 +511,6 @@
       return o;
     },
 
-    // Returns true if the value of each attribute in `attrs` equals the
-    // corresponding model value.  Otherwise returns false.
-    match: function(attrs) {
-      if (_.isEmpty(attrs)) return false;
-      for (var key in attrs) {
-        if (attrs[key] !== this.get(key)) return false;
-      }
-      return true;
-    },
-
     // Associations are initialized during `parse`.  They listen for the
     // `'parse'` event and remove the appropriate properties after parsing.
     parse: function(resp) {
@@ -540,16 +530,6 @@
 
     // Supermodel.Model is the default model for Super Collections.
     model: Model,
-
-    reset: function(models, options) {
-      // If `options` includes `{soft: true}`, add/remove models as needed
-      // instead of a "hard" reset.
-      if (options && options.soft) {
-        this.add(models = _.map(models, this._prepareModel, this), options);
-        return this.remove(_.difference(this.models, models), options);
-      }
-      return Collection.__super__.reset.apply(this, arguments);
-    },
 
     // To avoid collisions, use a separate namespace for collection tracking
     // methods.

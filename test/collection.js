@@ -16,18 +16,6 @@
     ok(new Collection([{id: 1}]).get(1) instanceof Model);
   });
 
-  test('Soft reset.', function() {
-    var m1 = new Model({id: 1});
-    var m2 = new Model({id: 2})
-      .on('add', function(){ ok(false); })
-      .on('remove', function(){ ok(false); });
-    var c = new Collection([m1, m2])
-      .on('reset', function(){ ok(false); });
-    c.reset([m2], {soft: true});
-    strictEqual(c.length, 1);
-    ok(c.at(0) === m2);
-  });
-
   module('Filter', {
 
     setup: function() {
