@@ -103,6 +103,12 @@
 
   module('One', {setup: setup});
 
+  test('Parsing with null id.', function() {
+    var membership = new Membership({user_id: 2});
+    membership.parse({user: {x: 1}});
+    strictEqual(membership.user.get('x'), 1);
+  });
+
   test('Setting associations.', function() {
     var user = new User({id: 5});
     var membership = new Membership({id: 3, user_id: 5});
