@@ -6,6 +6,9 @@
   // Expose Supermodel to the global object.
   var Supermodel = root.Supermodel = {VERSION: '0.0.1'};
 
+  // Local reference to Collection.
+  var Collection = Backbone.Collection;
+
   // Use Backbone's `extend` for sugar.
   var extend = Backbone.Model.extend;
 
@@ -14,19 +17,24 @@
   // Track associations between models.  Associated attributes are used and
   // then removed during `parse`.
   var Association = function(model, options) {
-    this.model = model;
-    this.options = options || {};
-    var associations = (model.associations || (model.associations = {}));
-    if (associations[options.name]) {
+    required(options, 'name');
+    _.extend(this, _.pick(options, 'name', 'where'));
+    this.source = options.source || this.name;
+    this.store = options.store || '_' + this.name;
+
+    // Store a reference to this association by name after ensuring it's
+    // unique.
+    if (model.associations()[options.name]) {
       throw new Error('Association already exists: ' + options.name);
     }
-    associations[options.name] = this;
-    var all = this.all = (model.all || (model.all = new Collection()));
-    if (this.initialize) all.on('initialize', this.initialize, this);
-    if (this.change) all.on('change', this.change, this);
-    if (this.parse) all.on('parse', this.parse, this);
-    if (this.destroy) all.on('destroy', this.destroy, this);
-    if (this.create) all.on('add', this.create, this);
+    model.associations()[options.name] = this;
+
+    // Listen for relevant events.
+    if (this.initialize) model.all().on('initialize', this.initialize, this);
+    if (this.change) model.all().on('change', this.change, this);
+    if (this.parse) model.all().on('parse', this.parse, this);
+    if (this.destroy) model.all().on('destroy', this.destroy, this);
+    if (this.create) model.all().on('add', this.create, this);
   };
 
   Association.extend = extend;
@@ -36,15 +44,15 @@
     // Notify `model` of its association with `other` using the `inverse`
     // option.
     associate: function(model, other) {
-      if (!this.options.inverse) return;
-      model.trigger('associate:' + this.options.inverse, model, other);
+      if (!this.inverse) return;
+      model.trigger('associate:' + this.inverse, model, other);
     },
 
     // Notify `model` of its dissociation with `other` using the `inverse`
     // option.
     dissociate: function(model, other) {
-      if (!this.options.inverse) return;
-      model.trigger('dissociate:' + this.options.inverse, model, other);
+      if (!this.inverse) return;
+      model.trigger('dissociate:' + this.inverse, model, other);
     }
 
   });
@@ -58,32 +66,39 @@
     // * id - The associated id is stored here.  Defaults to `name` + '_id'.
     // * source - Nested data is found in this attribute.  Defaults to `name`.
     constructor: function(model, options) {
+      required(options, 'inverse', 'model');
       One.__super__.constructor.apply(this, arguments);
-      options = this.options;
-      _.defaults(options, {
-        source: options.name,
-        id: options.name + '_id'
-      });
-      this.all.on('associate:' + options.name, this.replace, this);
-      this.all.on('dissociate:' + options.name, this.remove, this);
+      _.extend(this, _.pick(options, 'inverse', 'model'));
+      this.id = options.id || this.name + '_id';
+      model.all()
+        .on('associate:' + this.name, this.replace, this)
+        .on('dissociate:' + this.name, this.remove, this);
+    },
+
+    create: function(model) {
+      model[this.name] = _.bind(this.get, this, model);
+    },
+
+    get: function(model) {
+      return model[this.store];
     },
 
     initialize: function(model) {
       this.parse(model, model.attributes);
-      var id = model.get(this.options.id);
+      var id = model.get(this.id);
       if (id != null) this.replace(model, id);
     },
 
     parse: function(model, resp) {
-      if (!_.has(resp, this.options.source)) return;
-      var attrs = resp[this.options.source];
-      delete resp[this.options.source];
+      if (!_.has(resp, this.source)) return;
+      var attrs = resp[this.source];
+      delete resp[this.source];
       this.replace(model, attrs);
     },
 
     change: function(model) {
-      if (!model.hasChanged(this.options.id)) return;
-      this.replace(model, model.get(this.options.id));
+      if (!model.hasChanged(this.id)) return;
+      this.replace(model, model.get(this.id));
     },
 
     remove: function(model) {
@@ -92,7 +107,7 @@
 
     // When a model is destroyed, its association should be removed.
     destroy: function(model) {
-      var other = model[this.options.name];
+      var other = model[this.store];
       if (!other) return;
       this.remove(model);
       this.dissociate(other, model);
@@ -100,28 +115,27 @@
 
     replace: function(model, other) {
       if (!model) return;
-      var options = this.options;
-      var current = model[options.name];
+      var current = model[this.store];
 
       // If `other` is a primitive, assume it's an id.
       if (other != null && !_.isObject(other)) other = {id: other};
 
       // Is `other` already the current model?
-      if (other && !(other instanceof Model)) other = new options.model(other);
+      if (other && !(other instanceof Model)) other = this.model.create(other);
       if (current === other) return;
 
       // Tear down the current association.
-      if (!other) model.unset(options.id);
+      if (!other) model.unset(this.id);
       if (current) {
-        delete model[options.name];
+        delete model[this.store];
         this.dissociate(current, model);
       }
 
       if (!other) return;
 
       // Set up the new association.
-      model.set(options.id, other.id);
-      model[options.name] = other;
+      model.set(this.id, other.id);
+      model[this.store] = other;
       this.associate(other, model);
     }
 
@@ -134,31 +148,26 @@
     // Options:
     // * source - Nested data is stored in this attribute.  Defaults to `name`.
     constructor: function(model, options) {
+      required(options, 'collection');
       if (options.through) return new ManyThrough(model, options);
+      required(options, 'inverse');
       Many.__super__.constructor.apply(this, arguments);
-      options = _.defaults(this.options, {source: this.options.name});
-      this.all
-        .on('associate:' + options.name, this._associate, this)
-        .on('dissociate:' + options.name, this._dissociate, this);
+      _.extend(this, _.pick(options, 'collection', 'comparator', 'inverse'));
+      model.all()
+        .on('associate:' + this.name, this._associate, this)
+        .on('dissociate:' + this.name, this._dissociate, this);
     },
 
-    parse: function(model, resp) {
-      var models = resp[this.options.source];
-      if (!models) return;
-      delete resp[this.options.source];
-      var collection = model[this.options.name];
-      collection.reset(collection.parse(models));
-    },
+    create: function(model) {
+      model[this.name] = _.bind(this.get, this, model);
 
-    create: function(model, all) {
-      var options = this.options;
-      var collection = model[options.name];
+      var collection = model[this.store];
       if (collection) return;
 
       // Create the collection for storing the associated models.  Listen for
       // "add", "remove", and "reset" events and act accordingly.
-      collection = model[options.name] = new options.collection([], {
-        comparator: options.comparator
+      collection = model[this.store] = new this.collection([], {
+        comparator: this.comparator
       })
       .on('add', this.add, this)
       .on('remove', this.remove, this)
@@ -166,7 +175,22 @@
 
       // We'll need to know what model "owns" this collection in order to
       // handle events that it triggers.
-      collection.owner = model;
+      collection[this.inverse] = collection.owner = model;
+    },
+
+    get: function(model) {
+      return model[this.store];
+    },
+
+    parse: function(model, resp) {
+      var attrs = resp[this.source];
+      if (!attrs) return;
+      delete resp[this.source];
+      var collection = model[this.store];
+      var models = _.map(collection.parse(attrs), function(attrs) {
+        return collection.model.create(attrs);
+      });
+      collection.reset(this.where ? _.filter(models, this.where) : models);
     },
 
     initialize: function(model) {
@@ -191,26 +215,22 @@
     },
 
     destroy: function(model) {
-      if (!model) return;
-      var collection = model[this.options.name];
-      if (!collection) return;
+      var collection;
+      if (!model || !(collection = model[this.store])) return;
       collection.each(function(other) {
         this.dissociate(other, model);
       }, this);
     },
 
     _associate: function(model, other) {
-      if (!model || !other) return;
-      var name = this.options.name;
-      if (!model[name]) return;
-      model[name].add(other);
+      if (!model || !other || !model[this.store]) return;
+      if (this.where && !this.where(other)) return;
+      model[this.store].add(other);
     },
 
     _dissociate: function(model, other) {
-      if (!model || !other) return;
-      var name = this.options.name;
-      if (!model[name]) return;
-      model[name].remove(other);
+      if (!model || !other || !model[this.store]) return;
+      model[this.store].remove(other);
     }
 
   });
@@ -225,69 +245,79 @@
     // * through - The property name where the through collection is stored.
     constructor: function(model, options) {
       ManyThrough.__super__.constructor.apply(this, arguments);
-      options = _.defaults(this.options, {
-        source: this.options.name
-      });
-      this.through = model[options.through];
+      _.extend(this, _.pick(options, 'collection', 'through'));
       this._associate = andThis(this._associate, this);
       this._dissociate = andThis(this._dissociate, this);
     },
 
     create: function(model) {
-      var collection = new this.options.collection([], {
-        comparator: this.options.comparator
-      });
-      collection.owner = model;
-      model[this.options.name] = collection;
-      model[this.options.through]
-        .on('add', this.add, this)
-        .on('remove', this.remove, this)
-        .on('reset', this.reset, this)
-        .on('associate:' + this.options.source, this._associate)
-        .on('dissociate:' + this.options.source, this._dissociate);
+      if (!model[this.name]) model[this.name] = _.bind(this.get, this, model);
     },
 
-    initialize: function(model) {
-      if (!model) return;
-      this.reset(model[this.options.through]);
+    get: function(model) {
+      var collection = model[this.store];
+
+      // Through associations are created lazily in order to avoid
+      // initialization costs.
+      if (!collection) {
+        collection = new this.collection([], {
+          comparator: this.comparator
+        });
+
+        // We'll need to know what model "owns" this collection in order to
+        // handle events that it triggers.
+        collection.owner = model;
+        model[this.store] = collection;
+
+        // Initialize listeners and models.
+        this.reset(model[this.through]()
+          .on('add', this.add, this)
+          .on('remove', this.remove, this)
+          .on('reset', this.reset, this)
+          .on('associate:' + this.source, this._associate)
+          .on('dissociate:' + this.source, this._dissociate));
+      }
+
+      return collection;
     },
 
     add: function(model, through) {
       if (!model || !through) return;
-      if (!(model = model[this.options.source])) return;
-      through.owner[this.options.name].add(model);
+      if (!(model = model[this.source]())) return;
+      if (this.where && !this.where(model)) return;
+      through.owner[this.name]().add(model);
     },
 
     remove: function(model, through) {
       if (!model || !through) return;
-      if (!(model = model[this.options.source])) return;
+      if (!(model = model[this.source]())) return;
       var exists = through.any(function(o) {
-        return o[this.options.source] === model;
+        return o[this.source]() === model;
       }, this);
-      if (!exists) through.owner[this.options.name].remove(model);
+      if (!exists) through.owner[this.name]().remove(model);
     },
 
     reset: function(through) {
       if (!through) return;
-      var options = this.options;
-      var owner = through.owner;
-      var models = _.compact(_.uniq(_.pluck(through.models, options.source)));
-      through.owner[options.name].reset(models);
+      var models = _.compact(_.uniq(_.invoke(through.models, this.source)));
+      if (this.where) models = _.filter(models, this.where);
+      through.owner[this.name]().reset(models);
     },
 
     // Add associated models.
     _associate: function(through, model, other) {
       if (!through || !model || !other) return;
-      through.owner[this.options.name].add(other);
+      if (this.where && !this.where(other)) return;
+      through.owner[this.name]().add(other);
     },
 
     // Remove dissociated models, taking care to check for other instances.
     _dissociate: function(through, model, other) {
       if (!through || !model || !other) return;
       var exists = through.any(function(o) {
-        return o[this.options.source] === other;
+        return o[this.source]() === other;
       }, this);
-      if (!exists) through.owner[this.options.name].remove(other);
+      if (!exists) through.owner[this.name]().remove(other);
     }
 
   });
@@ -314,227 +344,78 @@
 
   });
 
-  // Provide common functionality for tracking a source collection and
-  // producing a target collection with models that match a certain criteria.
-  var Set = function(source, options) {
-    this.source = source;
-    this.options = _.defaults(options, {collection: Collection});
-    this.target = new options.collection([], {
-      source: source,
-      comparator: options.comparator
-    });
-    if (this.add) source.on('add', this.add, this);
-    if (this.remove) source.on('remove', this.remove, this);
-    if (this.change) source.on('change', this.change, this);
-    if (this.reset) {
-      source.on('reset', this.reset, this);
-      this.reset(source);
-    }
-  };
-
-  Set.extend = extend;
-
-  // Produce a collection that tracks the source collection, filtering it with
-  // the provided function.
-  var Filter = Set.extend({
-
-    add: function(model, source) {
-      if (this.options.filter(model)) this.target.add(model);
-    },
-
-    remove: function(model, source) {
-      this.target.remove(model);
-    },
-
-    reset: function(source) {
-      this.target.reset(source.filter(this.options.filter));
-    },
-
-    change: function(model) {
-      this.target[this.options.filter(model) ? 'add' : 'remove'](model);
-    }
-
-  });
-
-  // Track the first models of a collection, up to the specified length.
-  var First = Set.extend({
-
-    constructor: function(source, options) {
-      options.comparator = source.comparator;
-      First.__super__.constructor.apply(this, arguments);
-    },
-
-    add: function(model, source) {
-      if (source.indexOf(model) >= this.options.length) return;
-      var target = this.target;
-      target.add(model);
-      if (target.length > this.options.length) {
-        target.remove(target.last());
-      }
-    },
-
-    remove: function(model, source) {
-      var length = this.options.length;
-      this.target.remove(model);
-      if (this.target.length >= length) return;
-      if (source.length < length) return;
-      this.target.add(source.at(length - 1));
-    },
-
-    reset: function(source) {
-      this.target.reset(source.first(this.options.length));
-    }
-
-  });
-
-  // Track models with a unique attribute from the source collection.
-  var Uniq = Set.extend({
-
-    constructor: function(source, options) {
-      this.models = {};
-      this.counts = {};
-      Uniq.__super__.constructor.apply(this, arguments);
-    },
-
-    add: function(model, source) {
-      var value = model.get(this.options.attr);
-      if (!this.counts[value]) this.counts[value] = 0;
-      if (!(this.counts[value]++)) this.target.add(this.models[value] = model);
-    },
-
-    remove: function(model, source) {
-      var value = model.get(this.options.attr);
-      if (!(--this.counts[value])) {
-        this.target.remove(this.models[value]);
-        delete this.counts[value];
-        delete this.models[value];
-      }
-    },
-
-    reset: function(source) {
-      var value, attr = this.options.attr;
-      this.models = {};
-      this.counts = {};
-      source.each(function(model) {
-        var value = model.get(this.options.attr);
-        if (!this.counts[value]) this.counts[value] = 0;
-        if (!(this.counts[value]++)) this.models[value] = model;
-      }, this);
-      this.target.reset(_.values(this.models));
-    },
-
-    change: function(model) {
-      var attr = this.options.attr;
-      if (!model.hasChanged(attr)) return;
-      var value = model.previous(attr);
-      if (!(--this.counts[value])) {
-        this.target.remove(this.models[value]);
-        delete this.counts[value];
-        delete this.models[value];
-      }
-      this.add(model, this.source);
-    }
-
-  });
-
-  // Avoid naming collisions by providing one entry point for collection
-  // tracking methods.
-  var Track = function(source) {
-    this.source = source;
-  };
-
-  _.extend(Track.prototype, {
-
-    filter: function(options) {
-      if (_.isFunction(options)) options = {filter: options};
-      return new Filter(this.source, options).target;
-    },
-
-    first: function(options) {
-      if (_.isNumber(options)) options = {length: options};
-      return new First(this.source, options).target;
-    },
-
-    uniq: function(options) {
-      if (_.isString(options)) options = {attr: options};
-      return new Uniq(this.source, options).target;
-    }
-
-  });
-
   // Super Model
   var Model = Supermodel.Model = Backbone.Model.extend({
 
-    constructor: function(attrs, options) {
-      var id, cid, model, ctor = this.constructor;
-
-      // Models are globally tracked via the `all` property on the constructor.
-      var all = ctor.all || (ctor.all = new Collection());
-
-      // If `findConstructor` is defined, use it to find the constructor for the
-      // appropriate subclass.
-      var sub = this.findConstructor && this.findConstructor(attrs, options);
-      if (sub && !(this instanceof sub)) return new sub(attrs, options);
-
-      // Invoking the `Model` constructor with an `id` that matches an existing
-      // model will return a reference to the existing model after setting the
-      // attributes provided.
-      if (attrs && (cid = attrs._cid)) return all.getByCid(cid);
-      if (attrs && (id = attrs.id) && (model = all.get(id))) {
-        model.parse(attrs);
-        model.set(attrs);
-        return model;
-      }
-
-      Model.__super__.constructor.call(this, attrs, options);
-    },
+    cidAttribute: 'cid',
 
     initialize: function() {
-      // Use `"_cid"` for retrieving models by `attributes._cid`.
-      this.set({_cid: this.cid});
+      // Use `"cid"` for retrieving models by `attributes.cid`.
+      this.set(this.cidAttribute, this.cid);
 
       // Add the model to `all` for each constructor in its prototype chain.
       var ctor = this.constructor;
       while (ctor && ctor !== Model) {
-        (ctor.all || (ctor.all = new Collection())).add(this);
-        ctor = ctor.__super__ && ctor.__super__.constructor;
+        ctor.all().add(this);
+        ctor = ctor.__super__.constructor;
       }
 
       // Trigger 'initialize' for listening associations.
       this.trigger('initialize', this);
     },
 
-    // While `"_cid"` is used for tracking models, it should not be persisted.
+    // While `"cid"` is used for tracking models, it should not be persisted.
     toJSON: function() {
       var o = Model.__super__.toJSON.apply(this, arguments);
-      delete o._cid;
+      delete o[this.cidAttribute];
       return o;
     },
 
-    // Associations are initialized during `parse`.  They listen for the
-    // `'parse'` event and remove the appropriate properties after parsing.
+    // Associations are initialized/updated during `parse`.  They listen for
+    // the `'parse'` event and remove the appropriate properties after parsing.
     parse: function(resp) {
       this.trigger('parse', this, resp);
     }
 
   }, {
 
+    create: function(attrs, options) {
+      var id, cid, model;
+
+      // If `attrs` belongs to an existing model, return it.
+      if (attrs && (cid = attrs[this.prototype.cidAttribute])) {
+        return this.all().getByCid(cid);
+      }
+
+      // If a model already exists for `id`, return it.
+      if (attrs && (id = attrs.id) && (model = this.all().get(id))) {
+        model.parse(attrs);
+        model.set(attrs);
+        return model;
+      }
+
+      return new this(attrs, options);
+    },
+
     has: function() {
       return new Has(this);
-    }
+    },
 
-  });
+    // Return a collection of all models for a particular constructor.
+    all: function() {
+      return this._all || (this._all = new Collection());
+    },
 
-  // Super Collection
-  var Collection = Supermodel.Collection = Backbone.Collection.extend({
+    // Return a hash of all associations for a particular constructor.
+    associations: function() {
+      return this._associations || (this._associations = {});
+    },
 
-    // Supermodel.Model is the default model for Super Collections.
-    model: Model,
-
-    // To avoid collisions, use a separate namespace for collection tracking
-    // methods.
-    track: function() {
-      return new Track(this);
+    // Models are globally tracked via the `all` property on the constructor.
+    // Associations are tracked via the `associations` property.
+    reset: function() {
+      this._all = new Collection();
+      this._associations = {};
     }
 
   });
@@ -546,6 +427,15 @@
       var args = [this].concat(_.toArray(arguments));
       return func.apply(context, args);
     };
+  };
+
+  // Throw if the specified options are not provided.
+  var required = function(options) {
+    for (var i = 1; i < arguments.length; i++) {
+      if (!options[arguments[i]]) {
+        throw new Error('Option required: ' + arguments[i]);
+      }
+    }
   };
 
 }).call(this, Backbone);

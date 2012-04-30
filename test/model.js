@@ -1,64 +1,47 @@
 (function() {
 
-  var User, Admin;
   var Model = Supermodel.Model;
+  var Collection = Backbone.Collection;
+
+  var User = Model.extend();
+  var Admin = User.extend();
 
   module('Model', {
 
     setup: function() {
-      if (Model.all) Model.all.reset([]);
-
-      User = Model.extend({
-        constructor: function() {
-          var o = User.__super__.constructor.apply(this, arguments);
-          if (o) return o;
-        }
-      });
-
-      Admin = User.extend({
-        constructor: function() {
-          var o = Admin.__super__.constructor.apply(this, arguments);
-          if (o) return o;
-        }
-      });
+      User.reset();
+      Admin.reset();
     }
 
   });
 
   test('Return existing model if present', function() {
-    var a = new User({id: 1});
-    var b = new User({id: 1});
+    var a = User.create({id: 1});
+    var b = User.create({id: 1});
     ok(a === b);
   });
 
   test('Set values on existing models', function() {
-    var a = new User({id: 1});
-    var b = new User({id: 1, test: 'test'});
+    var a = User.create({id: 1});
+    var b = User.create({id: 1, test: 'test'});
     strictEqual(a.get('test'), 'test');
   });
 
   test('Remember instance after id is set', function() {
-    var a = new User();
+    var a = User.create();
     a.set({id: 1});
-    ok(a === new User({id: 1}));
+    ok(a === User.create({id: 1}));
   });
 
   test('Add instances to inheritance chain', function() {
-    var a = new Admin({id: 1});
-    var b = new User({id: 1});
+    var a = Admin.create({id: 1});
+    var b = User.create({id: 1});
     ok(a === b);
   });
 
-  test('Return subclass through findConstructor', function() {
-    User.prototype.findConstructor = function() {
-      return Admin;
-    };
-    ok(new User() instanceof Admin);
-  });
-
   test('Passing attributes returns model', function() {
-    var user = new User();
-    ok(new User(user.attributes) === user);
+    var user = User.create();
+    ok(User.create(user.attributes) === user);
   });
 
   test('Add model to all during initialize', function() {
@@ -69,14 +52,26 @@
       },
       initialize: function() {
         Test.__super__.initialize.apply(this, arguments);
-        ok(new Test({id: 1}) === this);
+        ok(Test.create({id: 1}) === this);
       }
     });
-    new Test({id: 1});
+    Test.create({id: 1});
   });
 
-  test('toJSON does not include _cid', function() {
-    deepEqual(new Model().toJSON(), {});
+  test('Use cid to identify attributes.', function() {
+    var Model = Supermodel.Model.extend();
+    var model = Model.create();
+    deepEqual(model.toJSON(), {});
+    strictEqual(model.get('cid'), model.cid);
+    ok(Model.create({cid: model.cid}) === model);
+  });
+
+  test('Use cidAttribute to identify attributes.', function() {
+    var Model = Supermodel.Model.extend({cidAttribute: '_cid'});
+    var model = Model.create();
+    strictEqual(model.get('_cid'), model.cid);
+    deepEqual(model.toJSON(), {});
+    ok(Model.create({_cid: model.cid}) === model);
   });
 
 })();

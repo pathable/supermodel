@@ -1,11 +1,10 @@
-                                                   _      _
-                                                  | |    | |
-     ___ _   _ _ __   ___ _ __ _ __ ___   ___   __| | ___| |
-    / __| | | | '_ \ / _ \ '__| '_ ` _ \ / _ \ / _` |/ _ \ |
-    \__ \ |_| | |_) |  __/ |  | | | | | | (_) | (_| |  __/ |
-    |___/\__,_| .__/ \___|_|  |_| |_| |_|\___/ \__,_|\___|_|
-              | |
-              |_|
+
+                                           |     |
+    ,---..   .,---.,---.,---.,-.-.,---.,---|,---.|
+    `---.|   ||   ||---'|    | | ||   ||   ||---'|
+    `---'`---'|---'`---'`    ` ' '`---'`---'`---'`---'
+              |
+
 
 Supermodel is a small extension for tracking collections, models, and their
 associations with [Backbonejs][backbone].
@@ -18,7 +17,8 @@ quite some time but your milage may vary.*
 `Supermodel.Model` is an extension of `Backbone.Model` that handles the
 tracking and creation of individual models.
 
-## Model Tracking
+
+### Model Tracking
 
 In large applications there are often multiple model objects representing the
 same server object.  This can cause synchronization problems and cause the
@@ -33,32 +33,83 @@ user.get('name') == duplicate.get('name'); // false :(
 
 If the server is updated while these models are being fetched the two instances
 may have conflicting attributes.  To circumvent this, Supermodel tracks models
-in the `all` property of the constructor and returns existing models instead of
-creating new ones when possible.
+in the `all` property of the constructor (which is itself a collection) and
+returns existing models instead of creating new ones when possible.
 
 ```javascript
-var user = new User({id: 5});
-new User({id: 5}) === user; // true
+var user = User.create({id: 5});
+User.create({id: 5}) === user; // true
 User.all.get(5) === user; // true
+```
+
+
+### Model.create
+
+In order to track models, Supermodel needs to check for their existence before
+returning a new model.  This is the job of `Model.create`.
+
+```javascript
+var User = Supermodel.Model.extend();
+var user = User.create();
+```
+
+You should also use `Model.create` for the `model` property of your
+collections.  This ensures that models created by your collections are
+tracked and not duplicates.
+
+```javascript
+var Users = Backbone.Collection.extend({
+  model: User.create
+});
 ```
 
 When using an existing model, it's assumed that the attributes provided are
 newer than the existing attributes and they are updated.
 
 ```javascript
-var user = new User({id: 5});
-user = new User({id: 5, name: 'brad'});
+var user = User.create({id: 5, name: 'bradley'});
+user = User.create({id: 5, name: 'brad'});
 user.get('name'); // brad
 ```
+
+
+### Model.all
+
+Each model is stored in the `all` collection on the constructor for tracking
+and event propagation.  These are rather handy for tracking events on an entire
+collection.
+
+```javascript
+  var User = Supermodel.Model.extend();
+  var user = User.create({id: 3});
+  User.all.get(3) === user; // true
+``
+
+These also work for child constructors.
+
+```javascript
+  var Admin = User.extend();
+  var admin = Admin.create({id: 2});
+  Admin.all.get(2) === admin; // true
+  User.all.get(2) === admin; // true
+```
+
+A few things to keep in mind about inheritance with `all` collections:
+
+* All models with a common ancestor in their prototype chain
+  (excluding `Supermodel.Model`) are assumed to have unique ids.
+* Models should always be created with the most specialized constructor
+  possible.  A model's super model can be deduced from the prototype chain, but
+  its sub model cannot.
 
 Whenever possible Supermodel attempts to prevent duplicate models but it's
 still possible to corrupt the `all` collection.  For instance, creating a new
 model without an `id` and then setting `id` to an existing models value will
-cause problems.
+cause problems.  However, this is no different than regular everyday backbone.
 
 ```javascript
-var user = new User({id: 5});
-var impostor = new User();
+var user = User.create({id: 5});
+var impostor = User.create();
 impostor.set({id: 5});
 User.all.get(5) === impostor; // true
 ```
@@ -66,72 +117,21 @@ User.all.get(5) === impostor; // true
 It's generally best to not set ids explicitly but only rely on server data for
 this.
 
-### Boilerplate
+*Note: `all` collections are not intended to be modified.  Doing so is not
+supported and can have negative consequences for model tracking.*
 
-To accomplish this, Supermodel will return the existing model from the
-constructor if it exists.  Unfortunately, you must include a small amount of
-boilerplate in each model constructor to gain this benefit.
 
-```javascript
-var User = Supermodel.Model.extend({
-  constructor: function(attrs, options) {
-    var o = User.__super__.constructor.call(this, attrs, options);
-    if (o) return o;
-  }
-});
-```
+### Model.reset
 
-For what it's worth, this is much nicer in Coffeescript.
-
-```coffeescript
-class User
-  constructor:
-    return o if (o = super)?
-```
-
-*If you don't include this in your model's constructor you will get back
-uninitialized models.*
-
-## Sub Models
-
-It's often convenient to return a collection of diverse attribute objects and
-ensure that models are created using a more specialized constructor if
-possible.  Supermodel provides the `findConstructor` hook for this purpose.
+`Supermodel.Model.reset` is used to remove associations and tracked models so
+they can be garbage collected.  This is also useful for testing.
 
 ```javascript
-  var User = Supermodel.Model.extend({
-    ...
-    findConstructor: function(attrs) {
-      if (attrs.admin) return Admin;
-    }
-  });
-
-  var Admin = User.extend({...});
-
-  var user = new User({id: 1, admin: true});
-  user instanceof Admin; // true
+var user = User.create({id: 3});
+User.reset();
+User.all.get(3); // null
 ```
 
-### Inheritance
-
-Model tracking will work perfectly fine with inheritance assuming a few initial
-conditions.  As models are created, they're added to the `all` collection of
-each constructor in the inheritance chain.
-
-* All models with a common ancestor in their prototype chain
-  (excluding `Supermodel.Model`) are assumed to have unique ids.
-* Models are always created with the most specialized constructor possible.
-  A models super model can be deduced from the prototype chain, but it's sub
-  model cannot.
-
-Using the code from above,
-
-```javascript
-var user = new User({id: 1});
-var admin = new Admin({id: 2});
-Admin.all.length; // 1
-User.all.length; // 2
-```
 
 # Associations
 
@@ -141,21 +141,31 @@ information to wire up associations between models.
 ```javascript
 var user = new User({id: 5});
 var membership = new Membership({id: 2, user_id: 5});
+
 membership.user === user; // false :(
+user.memberships.contains(membership); // false :(
 ```
 
 The problem is finding the correct model and ensuring it's the canonical
 representation of that model.  `Supermodel.Model` already handles these things
 for us so all that's left is to wire up specific associations.
 
-Using Supermodel,
-
 ```javascript
-Membership.has().one('user', {model: User});
+User.has().many('memberships', {
+  collection: Memberships,
+  inverse: 'user'
+});
 
-var user = new User({id: 5});
-var membership = new Membership({id: 2, user_id: 5});
-membership.user === user; // true :)
+Membership.has().one('user', {
+  model: User,
+  inverse: 'memberships'
+});
+
+var user = User.create({id: 5});
+var membership = Membership.create({id: 2, user_id: 5});
+
+membership.user() === user; // true :D
+user.memberships().contains(membership); // true :D
 ```
 
 When models are created or changed, they're inspected for appropriate
@@ -163,86 +173,139 @@ attributes and the associated properties are set.  When a model becomes
 associated or dissociated with another model an `'associate'` or `'dissociate'`
 event is triggered, respectively.
 
+Association properties are retrieved using a getter function.  This allows
+optimizations such as lazy-loading through collections.  Other associations may
+be lazy-loaded in the future as well.
+
 ## has
 
 Associations are specified using `Model.has`.  This prevents naming collisions
 and provides a convenient extension point outside of `Model` itself.
 
-## one
+### one
 
 *Constructor.has().one(name, options)*
 
-Instances of **Constructor** should contain a reference to one model, stored
-in the property specified by **name**.
+Instances of **Constructor** should contain a reference to one model, stored in
+the property specified by **store** and retrieved using the function specified
+by **name**.
 
 ```
-Membership.has().one('user', {model: User});
-```
-
-The *name* argument is consistent across all association methods and specifies
-the property name to store the associated model.
-
-### model
-
-The constructor to use when creating the associated model.
-
-### inverse
-
-The name of the inverse association, for notifying the associated model of
-`'associate'` and `'dissociate'` events.
-
-```javascript
-Membership.has().one('user', {
-  model: User,
-  inverse: 'memberships'
+User.has().one('settings', {
+  model: Settings,
+  inverse: 'user'
 });
+
+Settings.has().one('user', {
+  model: User,
+  inverse: 'settings'
+});
+
+var user = User.create({id: 2});
+var settings = Settings.create({user_id: 2});
+
+settings.user() === user; // true
+user.settings() === settings; // true
 ```
 
-### id
+#### options
 
-The attribute where the id of the associated model is stored.
+* *model* - The constructor to use when creating the associated model.
+* *inverse* - The name of the inverse association, for notifying the associated
+  model of `'associate'` and `'dissociate'` events.
+* *id* - The attribute where the id of the associated model is stored.
+* *source* - The attribute where the associated model's attributes are stored.
+* *store* - The property where the model should be stored. Defaults to '_' +
+  **name**.
 
-### source
-
-The attribute where the associated models attributes are stored.
-
-## many
+### many
 
 *Constructor.has().many(name, options)*
 
 Instances of **Constructor** should contain a collection with many models,
-stored in the property specified by **name**.
+retrieved with a function stored at **store** and retrieved with the function
+stored at **name**.
 
 ```javascript
 User.has().many('memberships', {
   collection: Memberships,
   inverse: 'user'
 });
+
+Membership.has().one('user', {
+  model: User,
+  inverse: 'memberships'
+});
+
+var user = User.create({id: 5});
+var membership = Membership.create({id: 2, user_id: 5});
+
+membership.user() === user; // true :D
+user.memberships().contains(membership); // true :D
 ```
 
-### collection
 
-The collection constructor to use when creating the associated collection.
+#### options
 
-### inverse
+* *collection* - The constructor to use when creating the associated
+  collection.
+* *inverse* - The name of the inverse association, for notifying the associated
+  model of `'associate'` and `'dissociate'` events.
+* *source* - The attribute where the associated models' attributes are stored.
+* *store* - The property where the collection should be stored. Defaults to '_' +
+  **name**.
+* *through* - The name of the through collection.
 
-The name of the inverse association, for notifying the associated models of
-`'associate'` and `'dissociate'` events.
-
-### source
-
-The attribute where the associated models' attributes are stored.
 
 ### through
 
-Specify a through collection that models should be retrieved from.
+The functionality of `many` is changed significantly when a `through` option is
+specified.  It's intended to track many-to-many associations through other
+collections.  For example:
 
 ```javascript
-User.has().many('groups', {
-  collection: Groups,
-  through: 'memberships',
-  source: 'group'
-});
+User.has()
+  .many('memberships', {
+    collection: Memberships,
+    inverse: 'user'
+  })
+  .many('groups', {
+    collection: Groups,
+    through: 'memberships'
+  });
+
+Membership.has()
+  .one('user', {
+    model: User,
+    inverse: 'memberships'
+  })
+  .one('group', {
+    model: Group,
+    inverse: 'memberships'
+  });
+
+Group.has()
+  .many('memberships', {
+    collection: Memberships,
+    inverse: 'group'
+  })
+  .many('users', {
+    collection: Users,
+    through: 'memberships'
+  });
+
+var user = User.create({id: 3});
+var group = Group.create({id: 6});
+var membership = Membership.create({user_id: 3, group_id: 6});
+
+membership.user() === user; // true
+membership.group() === user; // true
+
+user.memberships().contains(membership); // true
+group.memberships().contains(membership); // true
+
+user.groups().contains(group); // true
+group.users().contains(user); // true
 ```
 
 [backbone]: http://backbonejs.org
