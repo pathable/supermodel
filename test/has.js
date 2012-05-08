@@ -12,9 +12,23 @@
     return !model.get('hidden');
   };
 
-  var Users = Collection.extend({model: User});
-  var Memberships = Collection.extend({model: Membership});
-  var Groups = Collection.extend({model: Group});
+  var Users = Collection.extend({
+    model: function(attrs, options){
+      return User.create(attrs, options);
+    }
+  });
+
+  var Memberships = Collection.extend({
+    model: function(attrs, options){
+      return Membership.create(attrs, options);
+    }
+  });
+
+  var Groups = Collection.extend({
+    model: function(attrs, options){
+      return Group.create(attrs, options);
+    }
+  });
 
   var setup = function() {
 
@@ -77,6 +91,12 @@
   };
 
   module('Associations', {setup: setup});
+
+  test('Collections handle duplicates correctly.', function() {
+    var users = new Users([{id: 1}]);
+    users.add({id: 1, name: 'brad'});
+    strictEqual(users.at(0).get('name'), 'brad');
+  });
 
   test('Adding duplicate associations throws.', function() {
     raises(function() {

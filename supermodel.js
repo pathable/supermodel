@@ -188,7 +188,7 @@
       delete resp[this.source];
       var collection = model[this.store];
       var models = _.map(collection.parse(attrs), function(attrs) {
-        return collection.model.create(attrs);
+        return new collection.model(attrs);
       });
       collection.reset(this.where ? _.filter(models, this.where) : models);
     },
