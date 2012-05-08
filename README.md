@@ -83,7 +83,7 @@ collection.
   var User = Supermodel.Model.extend();
   var user = User.create({id: 3});
   User.all.get(3) === user; // true
-``
+```
 
 These also work for child constructors.
 
