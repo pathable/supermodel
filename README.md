@@ -72,6 +72,22 @@ user = User.create({id: 5, name: 'brad'});
 user.get('name'); // brad
 ```
 
+#### Collections
+
+To declare a collection for a `Supermodel.Model` you'll need to use a factory
+function rather than simply setting the model.  This is so that collections can
+also use `Model.create` and benefit from tracking.
+
+```javascript
+var Users = Backbone.Collection.extend({
+
+  model: function(attrs, options) {
+    return User.create(attrs, options);
+  }
+
+});
+```
+
 
 ### Model.all
 
