@@ -3,7 +3,7 @@ module.exports = function(grunt) {
   grunt.registerTask('default', 'lint qunit');
 
   grunt.initConfig({
-    qunit: ['./test/index.html'],
+    qunit: ['./test/index.html', './test/index-min.html'],
     lint: ['supermodel.js', './test/*.js'],
     jshint: {
       options: {
