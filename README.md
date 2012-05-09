@@ -6,13 +6,15 @@
               |
 
 
+[![Build Status](https://secure.travis-ci.org/pathable/supermodel.png)](http://travis-ci.org/pathable/supermodel)
+
 Supermodel is a small extension for tracking collections, models, and their
-associations with [Backbonejs][backbone].
+associations with [Backbone.js][backbone].
 
-*Note: This is alpha software.  A similar version has been used at pathable for
-quite some time but your milage may vary.*
+*Note: This is alpha software.  A similar version has been used at pathable
+for quite some time but your milage may vary.*
 
-# Model
+## Model
 
 `Supermodel.Model` is an extension of `Backbone.Model` that handles the
 tracking and creation of individual models.
@@ -31,10 +33,11 @@ var duplicate = new User({id: 5, name: 'brad'}).fetch();
 user.get('name') == duplicate.get('name'); // false :(
 ```
 
-If the server is updated while these models are being fetched the two instances
-may have conflicting attributes.  To circumvent this, Supermodel tracks models
-in the `all` property of the constructor (which is itself a collection) and
-returns existing models instead of creating new ones when possible.
+If the server is updated while these models are being fetched the two
+instances may have conflicting attributes.  To circumvent this, Supermodel
+tracks models in the `all` property of the constructor (which is itself a
+collection) and returns existing models instead of creating new ones when
+possible.
 
 ```javascript
 var user = User.create({id: 5});
@@ -54,8 +57,8 @@ var user = User.create();
 ```
 
 You should also use `Model.create` for the `model` property of your
-collections.  This ensures that models created by your collections are
-tracked and not duplicates.
+collections.  This ensures that models created by your collections are tracked
+and not duplicates.
 
 ```javascript
 var Users = Backbone.Collection.extend({
@@ -75,8 +78,8 @@ user.get('name'); // brad
 #### Collections
 
 To declare a collection for a `Supermodel.Model` you'll need to use a factory
-function rather than simply setting the model.  This is so that collections can
-also use `Model.create` and benefit from tracking.
+function rather than simply setting the model.  This is so that collections
+can also use `Model.create` and benefit from tracking.
 
 ```javascript
 var Users = Backbone.Collection.extend({
@@ -92,8 +95,8 @@ var Users = Backbone.Collection.extend({
 ### Model.all
 
 Each model is stored in the `all` collection on the constructor for tracking
-and event propagation.  These are rather handy for tracking events on an entire
-collection.
+and event propagation.  These are rather handy for tracking events on an
+entire collection.
 
 ```javascript
   var User = Supermodel.Model.extend();
@@ -149,10 +152,10 @@ User.all.get(3); // null
 ```
 
 
-# Associations
+## Associations
 
-When initializing models or changing their attributes, there is often plenty of
-information to wire up associations between models.
+When initializing models or changing their attributes, there is often plenty
+of information to wire up associations between models.
 
 ```javascript
 var user = new User({id: 5});
@@ -186,12 +189,12 @@ user.memberships().contains(membership); // true :D
 
 When models are created or changed, they're inspected for appropriate
 attributes and the associated properties are set.  When a model becomes
-associated or dissociated with another model an `'associate'` or `'dissociate'`
-event is triggered, respectively.
+associated or dissociated with another model an `'associate'` or
+`'dissociate'` event is triggered, respectively.
 
 Association properties are retrieved using a getter function.  This allows
-optimizations such as lazy-loading through collections.  Other associations may
-be lazy-loaded in the future as well.
+optimizations such as lazy-loading through collections.  Other associations
+may be lazy-loaded in the future as well.
 
 ## has
 
@@ -202,9 +205,9 @@ and provides a convenient extension point outside of `Model` itself.
 
 *Constructor.has().one(name, options)*
 
-Instances of **Constructor** should contain a reference to one model, stored in
-the property specified by **store** and retrieved using the function specified
-by **name**.
+Instances of **Constructor** should contain a reference to one model, stored
+in the property specified by **store** and retrieved using the function
+specified by **name**.
 
 ```
 User.has().one('settings', {
@@ -226,12 +229,12 @@ user.settings() === settings; // true
 
 #### options
 
-* *model* - The constructor to use when creating the associated model.
-* *inverse* - The name of the inverse association, for notifying the associated
-  model of `'associate'` and `'dissociate'` events.
-* *id* - The attribute where the id of the associated model is stored.
-* *source* - The attribute where the associated model's attributes are stored.
-* *store* - The property where the model should be stored. Defaults to '_' +
+- *model* - The constructor to use when creating the associated model.
+- *inverse* - The name of the inverse association, for notifying the
+  associated   model of `'associate'` and `'dissociate'` events.
+- *id* - The attribute where the id of the associated model is stored.
+- *source* - The attribute where the associated model's attributes are stored.
+- *store* - The property where the model should be stored. Defaults to '_' +
   **name**.
 
 ### many
@@ -265,18 +268,18 @@ user.memberships().contains(membership); // true :D
 
 * *collection* - The constructor to use when creating the associated
   collection.
-* *inverse* - The name of the inverse association, for notifying the associated
-  model of `'associate'` and `'dissociate'` events.
+* *inverse* - The name of the inverse association, for notifying the
+  associated model of `'associate'` and `'dissociate'` events.
 * *source* - The attribute where the associated models' attributes are stored.
-* *store* - The property where the collection should be stored. Defaults to '_' +
-  **name**.
+* *store* - The property where the collection should be stored. Defaults to
+  '_' + **name**.
 * *through* - The name of the through collection.
 
 
 ### through
 
-The functionality of `many` is changed significantly when a `through` option is
-specified.  It's intended to track many-to-many associations through other
+The functionality of `many` is changed significantly when a `through` option
+is specified.  It's intended to track many-to-many associations through other
 collections.  For example:
 
 ```javascript

@@ -1,3 +1,8 @@
+/*
+(c) Pathable Inc
+github.com/pathable/supermodel
+MIT License
+*/
 (function(Backbone){
 
   // The global object.

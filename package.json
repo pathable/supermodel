@@ -1,7 +1,24 @@
 {
   "name": "supermodel",
+  "description": "Backbone.js extension for tracking collections, models, and their associations.",
   "version": "0.0.1",
+  "author": "Brad Dunbar <brad@pathable.com>",
+  "homepage": "https://github.com/pathable/supermodel",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/pathable/supermodel.git"
+  },
+  "main": "./supermodel",
+  "engines": {
+    "node": "~0.6.17"
+  },
+  "dependencies": {
+  },
   "devDependencies": {
-    "grunt": "0.3.7"
+    "grunt": "0.3.7",
+    "uglify-js": "~1.2.6"
+  },
+  "scripts": {
+    "test": "make test"
   }
 }
