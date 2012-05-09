@@ -75,20 +75,26 @@
         .on('dissociate:' + this.name, this.remove, this);
     },
 
+    // Assign the getter property when a model is created.
     create: function(model) {
       model[this.name] = _.bind(this.get, this, model);
     },
 
+    // Return the stored model.
     get: function(model) {
       return model[this.store];
     },
 
+    // Parse the models attributes.  If `source` isn't found use the `id`
+    // attribute.
     initialize: function(model) {
       this.parse(model, model.attributes);
       var id = model.get(this.id);
       if (id != null) this.replace(model, id);
     },
 
+    // If `source` is provided, use it to initialize the association after
+    // removing it from the response object.
     parse: function(model, resp) {
       if (!_.has(resp, this.source)) return;
       var attrs = resp[this.source];
@@ -96,11 +102,13 @@
       this.replace(model, attrs);
     },
 
+    // Update the association when the `id` attribute changes.
     change: function(model) {
       if (!model.hasChanged(this.id)) return;
       this.replace(model, model.get(this.id));
     },
 
+    // Remove the current association.
     remove: function(model) {
       this.replace(model, null);
     },
@@ -113,6 +121,8 @@
       this.dissociate(other, model);
     },
 
+    // Replace the current association with `other`, taking care to remove the
+    // current association first.
     replace: function(model, other) {
       var id, current;
 
@@ -150,8 +160,6 @@
   // The many side of a one-to-many association.
   var Many = Association.extend({
 
-    // Options:
-    // * source - Nested data is stored in this attribute.  Defaults to `name`.
     constructor: function(model, options) {
       required(options, 'collection');
       if (options.through) return new ManyThrough(model, options);
@@ -163,9 +171,12 @@
         .on('dissociate:' + this.name, this._dissociate, this);
     },
 
+    // When a model is created, instantiate the associated collection and
+    // assign it using `store`.
     create: function(model) {
       model[this.name] = _.bind(this.get, this, model);
 
+      // Bail if the collection already exists.
       var collection = model[this.store];
       if (collection) return;
 
@@ -183,35 +194,50 @@
       collection[this.inverse] = collection.owner = model;
     },
 
+    // Return the associated collection.
     get: function(model) {
       return model[this.store];
     },
 
+    // Use the `source` property to reset the collection with the given models
+    // after removing it from the response object.
     parse: function(model, resp) {
       var attrs = resp[this.source];
       if (!attrs) return;
       delete resp[this.source];
       var collection = model[this.store];
-      var models = _.map(collection.parse(attrs), function(attrs) {
+      attrs = collection.parse(attrs);
+
+      // If `where` is not specified, reset the collection and bail.
+      if (!this.where) {
+        collection.reset(attrs);
+        return;
+      }
+
+      // Reset the collection after filtering the models from `attrs`.
+      collection.reset(_.filter(_.map(attrs, function(attrs) {
         return new collection.model(attrs);
-      });
-      collection.reset(this.where ? _.filter(models, this.where) : models);
+      }), this.where));
     },
 
+    // Parse the attributes to initialize a new model.
     initialize: function(model) {
       this.parse(model, model.attributes);
     },
 
+    // Models added to the collection should be associated with the owner.
     add: function(model, collection) {
       if (!model || !collection) return;
       this.associate(model, collection.owner);
     },
 
+    // Models removed from the collection should be dissociated from the owner.
     remove: function(model, collection) {
       if (!model || !collection) return;
       this.dissociate(model, collection.owner);
     },
 
+    // After a reset, all new models should be associated with the owner.
     reset: function(collection) {
       if (!collection) return;
       collection.each(function(model) {
@@ -219,6 +245,8 @@
       }, this);
     },
 
+    // If the owner is destroyed, all models in the collection should be
+    // dissociated from it.
     destroy: function(model) {
       var collection;
       if (!model || !(collection = model[this.store])) return;
@@ -227,12 +255,14 @@
       }, this);
     },
 
+    // Associated models should be added to the collection.
     _associate: function(model, other) {
       if (!model || !other || !model[this.store]) return;
       if (this.where && !this.where(other)) return;
       model[this.store].add(other);
     },
 
+    // Dissociated models should be removed from the collection.
     _dissociate: function(model, other) {
       if (!model || !other || !model[this.store]) return;
       model[this.store].remove(other);
@@ -245,9 +275,6 @@
   // One side of a many-to-many association.
   var ManyThrough = Association.extend({
 
-    // Options:
-    // * source - The property where models are found.
-    // * through - The property name where the through collection is stored.
     constructor: function(model, options) {
       ManyThrough.__super__.constructor.apply(this, arguments);
       _.extend(this, _.pick(options, 'collection', 'through'));
@@ -255,19 +282,17 @@
       this._dissociate = andThis(this._dissociate, this);
     },
 
+    // When a new model is created, assign the getter.
     create: function(model) {
       if (!model[this.name]) model[this.name] = _.bind(this.get, this, model);
     },
 
+    // Lazy load the associated collection to avoid initialization costs.
     get: function(model) {
       var collection = model[this.store];
 
-      // Through associations are created lazily in order to avoid
-      // initialization costs.
       if (!collection) {
-        collection = new this.collection([], {
-          comparator: this.comparator
-        });
+        collection = new this.collection([], {comparator: this.comparator});
 
         // We'll need to know what model "owns" this collection in order to
         // handle events that it triggers.
@@ -286,6 +311,7 @@
       return collection;
     },
 
+    // Add models to the collection when added to the through collection.
     add: function(model, through) {
       if (!model || !through) return;
       if (!(model = model[this.source]())) return;
@@ -293,6 +319,8 @@
       through.owner[this.name]().add(model);
     },
 
+    // Remove models from the collection when removed from the through
+    // collection after checking for other instances.
     remove: function(model, through) {
       if (!model || !through) return;
       if (!(model = model[this.source]())) return;
@@ -302,6 +330,7 @@
       if (!exists) through.owner[this.name]().remove(model);
     },
 
+    // Reset when the through collection is reset.
     reset: function(through) {
       if (!through) return;
       var models = _.compact(_.uniq(_.invoke(through.models, this.source)));
@@ -335,12 +364,14 @@
 
   _.extend(Has.prototype, {
 
+    // Create a one-to-* association.
     one: function(name, options) {
       options.name = name;
       new One(this.model, options);
       return this;
     },
 
+    // Create a many-to-* association.
     many: function(name, options) {
       options.name = name;
       new Many(this.model, options);
@@ -352,6 +383,7 @@
   // Super Model
   var Model = Supermodel.Model = Backbone.Model.extend({
 
+    // The attribute to store the cid in for lookup.
     cidAttribute: 'cid',
 
     initialize: function() {
@@ -384,6 +416,8 @@
 
   }, {
 
+    // Create a new model after checking for existence of a model with the same
+    // id.
     create: function(attrs, options) {
       var model;
       var all = this.all();
@@ -405,6 +439,7 @@
       return new this(attrs, options);
     },
 
+    // Create associations for a model.
     has: function() {
       return new Has(this);
     },
