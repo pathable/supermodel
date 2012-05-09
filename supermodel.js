@@ -62,9 +62,6 @@
   // One side of a one-to-one or one-to-many association.
   var One = Association.extend({
 
-    // Options:
-    // * id - The associated id is stored here.  Defaults to `name` + '_id'.
-    // * source - Nested data is found in this attribute.  Defaults to `name`.
     constructor: function(model, options) {
       required(options, 'inverse', 'model');
       One.__super__.constructor.apply(this, arguments);
@@ -365,6 +362,17 @@
   _.extend(Has.prototype, {
 
     // Create a one-to-* association.
+    //
+    // Options:
+    //
+    // * **inverse** - (*required*) The name of the inverse association.
+    // * **model** - (*required*) The model constructor for the association.
+    // * **id** - The associated id is stored here.
+    //   Defaults to `name` + '_id'.
+    // * **source** - The attribute where nested data is stored.
+    //   Defaults to `name`.
+    // * **store** - The property to store the association in.
+    //   Defaults to '_' + `name`.
     one: function(name, options) {
       options.name = name;
       new One(this.model, options);
@@ -372,6 +380,17 @@
     },
 
     // Create a many-to-* association.
+    //
+    // Options:
+    //
+    // * **collection** - (*required*) The collection constructor.
+    // * **inverse** - (*required for many-to-one associations*) The name of the
+    //   inverse association.
+    // * **through** - (*required for many-to-many associations*) The name of the
+    //   through association.
+    // * **source** - The attribute where nested data is stored.
+    // * **store** - The property to store the association in.
+    //   Defaults to '_' + `name`.
     many: function(name, options) {
       options.name = name;
       new Many(this.model, options);
