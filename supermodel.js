@@ -114,11 +114,16 @@
     },
 
     replace: function(model, other) {
+      var id, current;
+
       if (!model) return;
-      var current = model[this.store];
+      current = model[this.store];
 
       // If `other` is a primitive, assume it's an id.
-      if (other != null && !_.isObject(other)) other = {id: other};
+      if (other != null && !_.isObject(other)) {
+        id = other;
+        (other = {})[this.model.prototype.idAttribute] = id;
+      }
 
       // Is `other` already the current model?
       if (other && !(other instanceof Model)) other = this.model.create(other);
@@ -380,15 +385,18 @@
   }, {
 
     create: function(attrs, options) {
-      var id, cid, model;
+      var model;
+      var all = this.all();
+      var cid = attrs && attrs[this.prototype.cidAttribute];
+      var id = attrs && attrs[this.prototype.idAttribute];
 
       // If `attrs` belongs to an existing model, return it.
-      if (attrs && (cid = attrs[this.prototype.cidAttribute])) {
-        return this.all().getByCid(cid);
+      if (cid && (model = all.getByCid(cid)) && model.attributes === attrs) {
+        return model;
       }
 
       // If a model already exists for `id`, return it.
-      if (attrs && (id = attrs.id) && (model = this.all().get(id))) {
+      if (id && (model = all.get(id))) {
         model.parse(attrs);
         model.set(attrs);
         return model;

@@ -6,7 +6,7 @@
   var User = Model.extend();
   var Membership = Model.extend();
   var Group = Model.extend();
-  var Settings = Model.extend();
+  var Settings = Model.extend({idAttribute: '_id'});
 
   var visible = function(model) {
     return !model.get('hidden');
@@ -184,7 +184,7 @@
 
   test('With inverse.', function() {
     var user = User.create({id: 1});
-    var settings = Settings.create({id: 1, user_id: 1});
+    var settings = Settings.create({_id: 1, user_id: 1});
 
     ok(user.settings() === settings);
     strictEqual(user.get('settings_id'), 1);
@@ -207,6 +207,13 @@
     ok(!user.get('settings_id'));
     ok(!settings.user());
     ok(!settings.get('user_id'));
+  });
+
+  test('Respect idAttribute', function() {
+    var user = User.create({id: 1});
+    var settings = Settings.create({_id: 2});
+    user.set({settings_id: 2});
+    ok(user.settings() === settings);
   });
 
   module('Many', {setup: setup});

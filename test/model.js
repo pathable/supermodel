@@ -63,7 +63,8 @@
     var model = Model.create();
     deepEqual(model.toJSON(), {});
     strictEqual(model.get('cid'), model.cid);
-    ok(Model.create({cid: model.cid}) === model);
+    ok(Model.create(model.attributes) === model);
+    ok(Model.create({cid: model.cid}) !== model);
   });
 
   test('Use cidAttribute to identify attributes.', function() {
@@ -71,7 +72,14 @@
     var model = Model.create();
     strictEqual(model.get('_cid'), model.cid);
     deepEqual(model.toJSON(), {});
-    ok(Model.create({_cid: model.cid}) === model);
+    ok(Model.create(model.attributes) === model);
+    ok(Model.create({_cid: model.cid}) !== model);
+  });
+
+  test('Respect idAttribute.', function() {
+    var Model = Supermodel.Model.extend({idAttribute: '_id'});
+    var model = Model.create({_id: 1});
+    ok(Model.create({_id: 1}) === model);
   });
 
 })();
