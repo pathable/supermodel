@@ -9,7 +9,7 @@
 [![Build Status](https://secure.travis-ci.org/pathable/supermodel.png)](http://travis-ci.org/pathable/supermodel)
 
 Supermodel is a small extension for tracking collections, models, and their
-associations with [Backbonejs][backbone].
+associations with [Backbone.js][backbone].
 
 *Note: This is alpha software.  A similar version has been used at pathable
 for quite some time but your milage may vary.*
