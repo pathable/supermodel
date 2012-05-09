@@ -5,6 +5,9 @@ module.exports = function(grunt) {
   grunt.initConfig({
     qunit: ['./test/index.html'],
     lint: ['supermodel.js', './test/*.js'],
+    min: {
+      'supermodel.min.js': 'supermodel.js'
+    },
     watch: {
       default: {
         files: ['supermodel.js', 'test/index.html', 'test/**/*.js'],
@@ -36,7 +39,7 @@ module.exports = function(grunt) {
 
   grunt.registerTask('default', 'lint qunit');
 
-  grunt.registerTask('release', 'default docco');
+  grunt.registerTask('release', 'default docco min');
 
   grunt.registerTask('docco', function() {
 
