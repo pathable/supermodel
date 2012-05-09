@@ -6,6 +6,8 @@
               |
 
 
+[![Build Status](https://secure.travis-ci.org/pathable/supermodel.png)](http://travis-ci.org/pathable/supermodel)
+
 Supermodel is a small extension for tracking collections, models, and their
 associations with [Backbonejs][backbone].
 
