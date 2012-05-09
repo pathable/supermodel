@@ -24,10 +24,10 @@
 
     // Store a reference to this association by name after ensuring it's
     // unique.
-    if (model.associations()[options.name]) {
-      throw new Error('Association already exists: ' + options.name);
+    if (model.associations()[this.name]) {
+      throw new Error('Association already exists: ' + this.name);
     }
-    model.associations()[options.name] = this;
+    model.associations()[this.name] = this;
 
     // Listen for relevant events.
     if (this.initialize) model.all().on('initialize', this.initialize, this);
