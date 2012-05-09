@@ -64,7 +64,7 @@
 
     constructor: function(model, options) {
       required(options, 'inverse', 'model');
-      One.__super__.constructor.apply(this, arguments);
+      Association.apply(this, arguments);
       _.extend(this, _.pick(options, 'inverse', 'model'));
       this.id = options.id || this.name + '_id';
       model.all()
@@ -153,15 +153,13 @@
 
   });
 
-  // # Many
+  // # ManyToOne
   // The many side of a one-to-many association.
-  var Many = Association.extend({
+  var ManyToOne = Association.extend({
 
     constructor: function(model, options) {
-      required(options, 'collection');
-      if (options.through) return new ManyThrough(model, options);
-      required(options, 'inverse');
-      Many.__super__.constructor.apply(this, arguments);
+      required(options, 'inverse', 'collection');
+      Association.apply(this, arguments);
       _.extend(this, _.pick(options, 'collection', 'comparator', 'inverse'));
       model.all()
         .on('associate:' + this.name, this._associate, this)
@@ -267,13 +265,14 @@
 
   });
 
-  // # ManyThrough
+  // # ManyToMany
   //
   // One side of a many-to-many association.
-  var ManyThrough = Association.extend({
+  var ManyToMany = Association.extend({
 
     constructor: function(model, options) {
-      ManyThrough.__super__.constructor.apply(this, arguments);
+      required(options, 'collection', 'through');
+      Association.apply(this, arguments);
       _.extend(this, _.pick(options, 'collection', 'through'));
       this._associate = andThis(this._associate, this);
       this._dissociate = andThis(this._dissociate, this);
@@ -353,7 +352,7 @@
 
   });
 
-
+  // # has
   // Avoid naming collisions by providing one entry point for associations.
   var Has = function(model) {
     this.model = model;
@@ -361,7 +360,8 @@
 
   _.extend(Has.prototype, {
 
-    // Create a one-to-* association.
+    // ## one
+    // *Create a one-to-one or one-to-many association.*
     //
     // Options:
     //
@@ -379,7 +379,8 @@
       return this;
     },
 
-    // Create a many-to-* association.
+    // ## many
+    // *Create a many-to-one or many-to-many association.*
     //
     // Options:
     //
@@ -393,13 +394,14 @@
     //   Defaults to '_' + `name`.
     many: function(name, options) {
       options.name = name;
-      new Many(this.model, options);
+      var Association = options.through ? ManyToMany : ManyToOne;
+      new Association(this.model, options);
       return this;
     }
 
   });
 
-  // Super Model
+  // # Model
   var Model = Supermodel.Model = Backbone.Model.extend({
 
     // The attribute to store the cid in for lookup.
@@ -422,7 +424,7 @@
 
     // While `"cid"` is used for tracking models, it should not be persisted.
     toJSON: function() {
-      var o = Model.__super__.toJSON.apply(this, arguments);
+      var o = Backbone.Model.prototype.toJSON.apply(this, arguments);
       delete o[this.cidAttribute];
       return o;
     },
@@ -435,6 +437,7 @@
 
   }, {
 
+    // ## create
     // Create a new model after checking for existence of a model with the same
     // id.
     create: function(attrs, options) {

@@ -216,7 +216,7 @@
     ok(user.settings() === settings);
   });
 
-  module('Many', {setup: setup});
+  module('Many To One', {setup: setup});
 
   test('Required fields.', function() {
 
@@ -450,7 +450,7 @@
     strictEqual(user.memberships().at(0).group().id, 2);
   });
 
-  module('Many - Through', {setup: setup});
+  module('Many To Many', {setup: setup});
 
   test('Required fields.', function() {
 
@@ -471,6 +471,7 @@
     }, function(e) {
       return e.message === 'Option required: collection';
     }, 'collection');
+
   });
 
   test('Collection is initialized.', function() {
