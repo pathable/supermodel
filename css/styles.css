@@ -3062,6 +3062,10 @@ pre code {
 .fixed-top a img {
   vertical-align: -12px;
 }
+.hero code {
+  font-size: 14px;
+  line-height: 15px;
+}
 .main-content {
   padding-top: 35px;
 }
