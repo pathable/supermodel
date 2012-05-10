@@ -201,11 +201,11 @@ user.memberships().contains(membership); // true :D</code></pre>
             <p>Association properties are retrieved using a getter function.  This allows optimizations such as lazy-loading through collections.  Other associations may be lazy-loaded in the future as well.</p>
           </section>
           <section>
-            <a class='h2' name='has'>has</a>
+            <a class='h3' name='has'>has</a>
             <p>Associations are specified using <code>Model.has</code>.  This prevents naming collisions and provides a convenient extension point outside of <code>Model</code> itself.</p>
           </section>
           <section>
-            <a class='h2' name='one'>one</a>
+            <a class='h3' name='one'>one</a>
             <p><code>Constructor.has().one(name, options)</code></p>
             <p><span class="b i">Instances of Constructor</span> should contain a reference to one model, stored in the property specified by <span class="b i">store</span> and retrieved using the function specified by <span class="b i">name</span>.</p>
             <pre class='shadow-outer rounded colorize language-javascript'><code>User.has().one('settings', {
@@ -225,7 +225,7 @@ settings.user() === user; // true
 user.settings() === settings; // true</code></pre>
           </section>
           <section>
-            <a class='h3'>Model.create</a>
+            <a class='h3'>Options</a>
             <ul>
               <li><em>model</em> - The constructor to use when creating the associated model.</li>
               <li><em>inverse</em> - The name of the inverse association, for notifying the associated model of <code>'associate'</code> and <code>'dissociate'</code> events.</li>
