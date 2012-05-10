@@ -3041,7 +3041,7 @@ code {
   font-weight: 700;
 }
 pre code {
-  background-color: rgba(0,0,0,0.05);
+  background-color: rgba(0,0,0,0.8);
   border-radius: 5px;
   line-height: 18px;
   font-weight: normal;
