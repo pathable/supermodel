@@ -33,18 +33,18 @@
           </div>
         </div><div class="fluid-1">
           <pre class="mll shadow-outer rounded colorize language-javascript"><code>Post.has().many('comments', {
-collection: Posts,
-inverse: 'post'
+  collection: Posts,
+  inverse: 'post'
 });
 
 Comment.has().one('post', {
-model: Post,
-inverse: 'comments'
+  model: Post,
+  inverse: 'comments'
 });
 
 var post = Post.create({
-id: 1,
-comments: [{id: 2}, {id: 3}, {id: 4}]
+  id: 1,
+  comments: [{id: 2}, {id: 3}, {id: 4}]
 });
 
 post.comments().length; // 3
@@ -108,9 +108,9 @@ comment.post() === post; // true :D</code></pre>
             <a class='h3' name='model_tracking'>Model Tracking</a>
             <p>In large applications there are often multiple model objects representing the same server object. This can cause synchronization problems and cause the display of stale data. For instance:</p>
             <pre class='shadow-outer rounded colorize language-javascript mbm'><code>var user = new User({id: 5}).fetch();
-  ...
-  var duplicate = new User({id: 5, name: 'brad'}).fetch();
-  user.get('name') == duplicate.get('name'); // false :(</code></pre>
+...
+var duplicate = new User({id: 5, name: 'brad'}).fetch();
+user.get('name') == duplicate.get('name'); // false :(</code></pre>
             <p>If the server is updated while these models are being fetched the two instances may have conflicting attributes.  To circumvent this, Supermodel tracks models in the <code>all</code> property of the constructor (which is itself a collection) and returns existing models instead of creating new ones when possible.</p>
             <pre class='shadow-outer rounded colorize language-javascript'><code>var user = User.create({id: 5});
 User.create({id: 5}) === user; // true
@@ -144,11 +144,11 @@ user.get('name'); // brad</code></pre>
           <section>
             <a class='h3' name='model.all'>Model.all</a>
             <p>Each model is stored in the <code>all</code> collection on the constructor for tracking and event propagation.  These are rather handy for tracking events on an entire collection.</p>
-            <pre class='shadow-outer rounded colorize language-javascript'><code>  var User = Supermodel.Model.extend();
+            <pre class='shadow-outer rounded colorize language-javascript'><code>var User = Supermodel.Model.extend();
 var user = User.create({id: 3});
 User.all.get(3) === user; // true</code></pre>
             <p>These also work for child constructors.</p>
-            <pre class='shadow-outer rounded colorize language-javascript'><code>  var Admin = User.extend();
+            <pre class='shadow-outer rounded colorize language-javascript'><code>var Admin = User.extend();
 var admin = Admin.create({id: 2});
 Admin.all.get(2) === admin; // true
 User.all.get(2) === admin; // true</code></pre>
