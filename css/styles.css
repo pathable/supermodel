@@ -3054,13 +3054,30 @@ pre code {
   top: 0;
   left: 0;
   right: 0;
-  background: white;
+  background: #333333;
+  padding: 1px 0 4px;
   -webkit-box-shadow: 0 5px 9px 0 rgba(0, 0, 0, 0.15);
   -moz-box-shadow: 0 5px 9px 0 rgba(0, 0, 0, 0.15);
   box-shadow: 0 5px 9px 0 rgba(0, 0, 0, 0.15);
 }
+.fixed-top .btn {
+  position: relative;
+  top: 5px;
+  left: 20px;
+  font-size: 10px;
+  font-weight: bold;
+  padding: 0 10px 2px;
+  opacity: 0;
+  transition: opacity 400ms;
+  -webkit-transition: opacity 400ms;
+  -moz-transition: opacity 400ms;
+}
+.fixed-top .h3 {
+  color: #999;
+}
 .fixed-top a img {
-  vertical-align: -12px;
+  height: 28px;
+  vertical-align: -6px;
 }
 .hero code {
   font-size: 14px;
@@ -3071,6 +3088,8 @@ pre code {
 }
 .nav-list a {
   color: inherit;
+  padding: 3px 15px 4px 3px;
+  margin-left: -3px;
 }
 .btn .h3 {
   line-height: 18px;

@@ -7,6 +7,9 @@
 <body>
   <div class="fixed-top">
     <div class="page-container">
+      <span class="small btn pull-left icon-github-sign mrs">Github</span>
+      <span class="small btn pull-left icon-download-alt mrs">Zip</span>
+      <span class="small btn pull-left icon-download-alt mrs">Tar</span>
       <div class="h3 light text-right v-middle">Supermodel is sponsored by <a href="//github.com/pathable" target="_blank"><img class="height-2" src="pathable.png" alt="Pathable, Inc."></a></div>
     </div>
   </div>
@@ -323,7 +326,7 @@ group.users().contains(user); // true</code></pre>
   <script type="text/javascript">
 
     $(document).ready(function() {
-      var $navList = $('.nav-list'), $window = $(window);
+      var $navList = $('.nav-list'), $window = $(window), $buttons = $('.fixed-top .btn');
       $('.colorize').each(function(i, e) {hljs.highlightBlock(e)});
       $window.on('scroll', function() {
         if ($window.scrollTop() - $navList.parent().offset()['top'] >= -46) {
@@ -331,8 +334,10 @@ group.users().contains(user); // true</code></pre>
             'position':'fixed',
             'top':'46px'
           });
+          $buttons.css({'opacity': '1'});
         } else {
           $navList.css({'position':'static'});
+          $buttons.css({'opacity': '0'});
         }
       });
     });
