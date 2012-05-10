@@ -1,51 +1,346 @@
-<!doctype html>
-<html>
-  <head>
-    <link rel="stylesheet" media="screen" href="styles/css/styles.css">
-  </head>
-  <body>
-    <div class='site-nav ptl pbl'>
-      <div class='navbar page-container'>
-        <div class='navbar-inner'>
-          <ul class='navbar-list'><li class='navbar-item'>
-              <a class='navbar-link' href='#overview'>
-                <span class='icon-heart'>Overview</span>
-              </a>
-            </li><li class='navbar-item'>
-              <a class='navbar-link' href='#hasOne'>
-                <span class='icon-heart'>HasOne</span>
-              </a>
-            </li><li class='navbar-item'>
-              <a class='navbar-link' href='#hasMany'>
-                <span class='icon-heart'>HasMany</span>
-              </a>
-            </li><li class='navbar-item'>
-              <a class='navbar-link' href='#HasManyThrough'>
-                <span class='icon-heart'>HasManyThrough</span>
-              </a>
-            </li><li class='navbar-item'>
-              <a class='navbar-link' href='#about'>
-                <span class='icon-heart'>About</span>
-              </a>
-            </li></ul>
+<!DOCTYPE html>
+<head>
+  <link href='css/monokai.css' media='screen' rel='stylesheet'>
+  <link href='css/styles.css' media='screen' rel='stylesheet'>
+  <title>Supermodel.js | Utilities for Backbone Models and Collections</title>
+</head>
+<body>
+  <div class="fixed-top">
+    <div class="page-container">
+      <a class="small btn pull-left icon-github-sign mrs" href="//github.com/pathable/supermodel" target="_blank">Github</a>
+      <span class="small btn pull-left icon-download-alt mrs" href="//github.com/pathable/supermodel/zipball/master">Zip</span>
+      <span class="small btn pull-left icon-download-alt mrs" href="//github.com/pathable/supermodel/tarball/master">Tar</span>
+      <div class="h3 light text-right prl">Supermodel is sponsored by <a href="//github.com/pathable" target="_blank"><img class="height-2" src="pathable.png" alt="Pathable, Inc."></a></div>
+    </div>
+  </div>
+  <div class='page-container main-content pbl'>
+
+      <div class='fluid-grid-2 secondary-bg pal shadow-outer'>
+        <div class='fluid-1'>
+          <div class="mrm">
+            <img class='block' src='logo.png'>
+          </div>
+          <div class='h2 ptm pbm mrl'>Supermodel is a small extension for tracking collections, models, and their associations with Backbonejs.</div>
+          <div class='small quiet mrl'>Note: This is alpha software. A similar version has been used at pathable for quite some time but your milage may vary.</div>
+          <div class="ptl">
+            <a class="btn" href="//github.com/pathable/supermodel" target="_blank">
+              <div class="light small quiet">Fork on</div>
+              <span class="h3"><i class="icon-github-sign"></i>Github</span>
+            </a>
+            <a class="btn" href="//github.com/pathable/supermodel/zipball/master">
+              <div class="light small quiet">Download</div>
+              <span class="h3"><i class="icon-download-alt"></i>Zip File</span>
+            </a>
+            <a class="btn" href="//github.com/pathable/supermodel/tarball/master">
+              <div class="light small quiet">Download</div>
+              <span class="h3"><i class="icon-download-alt"></i>Tar File</span>
+            </a>
+          </div>
+        </div><div class="fluid-1">
+          <pre class="mll hero colorize language-javascript"><code>Post.has().many('comments', {
+  collection: Posts,
+  inverse: 'post'
+});
+
+Comment.has().one('post', {
+  model: Post,
+  inverse: 'comments'
+});
+
+var post = Post.create({
+  id: 1,
+  comments: [{id: 2}, {id: 3}, {id: 4}]
+});
+
+post.comments().length; // 3
+var comment = Comment.create({id: 5, post_id: 1});
+post.comments().length; // 4
+comment.post() === post; // true :D</code></pre>
+        </div>
+      </div>
+
+      <div class="mixed-row pal primary-bg shadow-outer bbl bbr">
+        <div class="fixed prl">
+          <div class='width-20'>
+            <ul class='nav-list no-list width-20 pts pbs'>
+              <li class="nav-list-item">
+                <a class='strong nav-list-link' href='#model'>Model</a>
+              </li>
+              <li class="nav-list-item">
+                <a class='nav-list-link' href='#model_tracking'>Model Tracking</a>
+              </li>
+              <li class="nav-list-item">
+                <a class='nav-list-link' href='#model.create'>Model.create</a>
+              </li>
+              <li class="nav-list-item">
+                <a class='nav-list-link' href='#collections'>Collections</a>
+              </li>
+              <li class="nav-list-item">
+                <a class='nav-list-link' href='#model.all'>Model.all</a>
+              </li>
+              <li class="nav-list-item mbm">
+                <a class='nav-list-link' href='#model.reset'>Model.reset</a>
+              </li>
+              <li class="nav-list-item">
+                <a class='strong nav-list-link' href='#associations'>Associations</a>
+              </li>
+              <li class="nav-list-item">
+                <a class='nav-list-link' href='#has'>has</a>
+              </li>
+              <li class="nav-list-item">
+                <a class='nav-list-link' href='#one'>one</a>
+              </li>
+              <li class="nav-list-item">
+                <a class='nav-list-link' href='#many'>many</a>
+              </li>
+              <li class="nav-list-item">
+                <a class='nav-list-link' href='#through'>through</a>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div class="fluid">
+          <section>
+            <a class='h1' name='model'>Model</a>
+            <p>
+              <code>Supermodel.Model</code>
+              <span>is an extension of</span>
+              <code>Backbone.Model</code>
+              <span>that handles the tracking and creation of individual models.</span>
+            </p>
+          </section>
+          <section>
+            <a class='h3' name='model_tracking'>Model Tracking</a>
+            <p>In large applications there are often multiple model objects representing the same server object. This can cause synchronization problems and cause the display of stale data. For instance:</p>
+            <pre class='colorize language-javascript mbm'><code>var user = new User({id: 5}).fetch();
+...
+var duplicate = new User({id: 5, name: 'brad'}).fetch();
+user.get('name') == duplicate.get('name'); // false :(</code></pre>
+            <p>If the server is updated while these models are being fetched the two instances may have conflicting attributes.  To circumvent this, Supermodel tracks models in the <code>all</code> property of the constructor (which is itself a collection) and returns existing models instead of creating new ones when possible.</p>
+            <pre class='colorize language-javascript'><code>var user = User.create({id: 5});
+User.create({id: 5}) === user; // true
+User.all.get(5) === user; // true</code></pre>
+          </section>
+          <section>
+            <a class='h3' name='model.create'>Model.create</a>
+            <p>In order to track models, Supermodel needs to check for their existence before returning a new model.  This is the job of <code>Model.create</code>.</p>
+            <pre class='colorize language-javascript'><code>var User = Supermodel.Model.extend();
+var user = User.create();</code></pre>
+            <p>You should also use <code>Model.create</code> for the <code>model</code> property of your collections.  This ensures that models created by your collections are tracked and not duplicates.</p>
+            <pre class='colorize language-javascript'><code>var Users = Backbone.Collection.extend({
+  model: User.create
+});</code></pre>
+            <p>When using an existing model, it's assumed that the attributes provided are newer than the existing attributes and they are updated.</p>
+            <pre class='colorize language-javascript'><code>var user = User.create({id: 5, name: 'bradley'});
+user = User.create({id: 5, name: 'brad'});
+user.get('name'); // brad</code></pre>
+          </section>
+          <section>
+            <a class='h3' name='Collections'>Collections</a>
+            <p>To declare a collection for a <code>Supermodel.Model</code> you'll need to use a factory function rather than simply setting the model.  This is so that collections can also use <code>Model.create</code> and benefit from tracking.</p>
+            <pre class='colorize language-javascript'><code>var Users = Backbone.Collection.extend({
+
+  model: function(attrs, options) {
+    return User.create(attrs, options);
+  }
+
+});</code></pre>
+          </section>
+          <section>
+            <a class='h3' name='model.all'>Model.all</a>
+            <p>Each model is stored in the <code>all</code> collection on the constructor for tracking and event propagation.  These are rather handy for tracking events on an entire collection.</p>
+            <pre class='colorize language-javascript'><code>var User = Supermodel.Model.extend();
+var user = User.create({id: 3});
+User.all.get(3) === user; // true</code></pre>
+            <p>These also work for child constructors.</p>
+            <pre class='colorize language-javascript'><code>var Admin = User.extend();
+var admin = Admin.create({id: 2});
+Admin.all.get(2) === admin; // true
+User.all.get(2) === admin; // true</code></pre>
+            <p>A few things to keep in mind about inheritance with <code>all</code> collections:</p>
+            <ul>
+              <li>All models with a common ancestor in their prototype chain (excluding <code>Supermodel.Model</code>) are assumed to have unique ids.</li>
+              <li>Models should always be created with the most specialized constructor possible.  A model's super model can be deduced from the prototype chain, but its sub model cannot.</li>
+            </ul>
+            <p>Whenever possible Supermodel attempts to prevent duplicate models but it's still possible to corrupt the <code>all</code> collection.  For instance, creating a new model without an <code>id</code> and then setting <code>id</code> to an existing models value will cause problems.  However, this is no different than regular everyday backbone.</p>
+            <pre class='colorize language-javascript'><code>var user = User.create({id: 5});
+var impostor = User.create();
+impostor.set({id: 5});
+User.all.get(5) === impostor; // true</code></pre>
+            <p>It's generally best to not set ids explicitly but only rely on server data for this.</p>
+            <p class="em">Note: <code>all</code> collections are not intended to be modified.  Doing so is not
+supported and can have negative consequences for model tracking.</p>
+          </section>
+          <section>
+            <a class='h3' name='model.reset'>Model.reset</a>
+            <p><code>Supermodel.Model.reset</code> is used to remove associations and tracked models so they can be garbage collected.  This is also useful for testing.</p>
+            <pre class='colorize language-javascript'><code>var user = User.create({id: 3});
+User.reset();
+User.all.get(3); // null</code></pre>
+          </section>
+          <section>
+            <a class='h1' name='associations'>Associations</a>
+            <p>When initializing models or changing their attributes, there is often plenty of information to wire up associations between models.</p>
+            <pre class='colorize language-javascript'><code>var user = new User({id: 5});
+var membership = new Membership({id: 2, user_id: 5});
+
+membership.user === user; // false :(
+user.memberships.contains(membership); // false :(</code></pre>
+            <p>The problem is finding the correct model and ensuring it's the canonical representation of that model.  <code>Supermodel.Model</code> already handles these things for us so all that's left is to wire up specific associations.</p>
+            <pre class='colorize language-javascript'><code>User.has().many('memberships', {
+  collection: Memberships,
+  inverse: 'user'
+});
+
+Membership.has().one('user', {
+  model: User,
+  inverse: 'memberships'
+});
+
+var user = User.create({id: 5});
+var membership = Membership.create({id: 2, user_id: 5});
+
+membership.user() === user; // true :D
+user.memberships().contains(membership); // true :D</code></pre>
+            <p>When models are created or changed, they're inspected for appropriate attributes and the associated properties are set.  When a model becomes associated or dissociated with another model an <code>'associate'</code> or <code>'dissociate'</code> event is triggered, respectively.</p>
+            <p>Association properties are retrieved using a getter function.  This allows optimizations such as lazy-loading through collections.  Other associations may be lazy-loaded in the future as well.</p>
+          </section>
+          <section>
+            <a class='h3' name='has'>has</a>
+            <p>Associations are specified using <code>Model.has</code>.  This prevents naming collisions and provides a convenient extension point outside of <code>Model</code> itself.</p>
+          </section>
+          <section>
+            <a class='h3' name='one'>one</a>
+            <p><code>Constructor.has().one(name, options)</code></p>
+            <p><span class="b i">Instances of Constructor</span> should contain a reference to one model, stored in the property specified by <span class="b i">store</span> and retrieved using the function specified by <span class="b i">name</span>.</p>
+            <pre class='colorize language-javascript'><code>User.has().one('settings', {
+  model: Settings,
+  inverse: 'user'
+});
+
+Settings.has().one('user', {
+  model: User,
+  inverse: 'settings'
+});
+
+var user = User.create({id: 2});
+var settings = Settings.create({user_id: 2});
+
+settings.user() === user; // true
+user.settings() === settings; // true</code></pre>
+          </section>
+          <section>
+            <a class='h3'>Options</a>
+            <ul>
+              <li><em>model</em> - The constructor to use when creating the associated model.</li>
+              <li><em>inverse</em> - The name of the inverse association, for notifying the associated model of <code>'associate'</code> and <code>'dissociate'</code> events.</li>
+              <li><em>id</em> - The attribute where the id of the associated model is stored.</li>
+              <li><em>source</em> - The attribute where the associated model's attributes are stored.</li>
+              <li><em>store</em> - The property where the model should be stored. Defaults to '_' + <span class="i b">name</span>.</li>
+            </ul>
+          </section>
+          <section>
+            <a class='h3' name='many'>many</a>
+            <p><code>Constructor.has().many(name, options)</code></p>
+            <p>Instances of <span class="b i">Constructor</span> should contain a collection with many models, retrieved with a function stored at <span class="b i">store</span> and retrieved with the function stored at <span class="b i">name</span>.</p>
+            <pre class='colorize language-javascript'><code>User.has().many('memberships', {
+  collection: Memberships,
+  inverse: 'user'
+});
+
+Membership.has().one('user', {
+  model: User,
+  inverse: 'memberships'
+});
+
+var user = User.create({id: 5});
+var membership = Membership.create({id: 2, user_id: 5});
+
+membership.user() === user; // true :D
+user.memberships().contains(membership); // true :D</code></pre>
+          </section>
+          <section>
+            <a class='h3'>options</a>
+            <ul>
+              <li>collection - The constructor to use when creating the associated collection.</li>
+              <li>inverse - The name of the inverse association, for notifying the associated model of <code>'associate'</code> and <code>'dissociate'</code> events.</li>
+              <li>source - The attribute where the associated models' attributes are stored.</li>
+              <li>store - The property where the collection should be stored. Defaults to '_' + <span class="b i">name</span>.</li>
+              <li>through - The name of the through collection.</li>
+            </ul>
+          </section>
+          <section>
+            <a class='h3' name="through">through</a>
+            <p>The functionality of <code>many</code> is changed significantly when a <code>through</code> option is
+specified.  It's intended to track many-to-many associations through other
+collections.  For example:</p>
+            <pre class='colorize language-javascript'><code>User.has()
+  .many('memberships', {
+    collection: Memberships,
+    inverse: 'user'
+  })
+  .many('groups', {
+    collection: Groups,
+    through: 'memberships'
+  });
+
+Membership.has()
+  .one('user', {
+    model: User,
+    inverse: 'memberships'
+  })
+  .one('group', {
+    model: Group,
+    inverse: 'memberships'
+  });
+
+Group.has()
+  .many('memberships', {
+    collection: Memberships,
+    inverse: 'group'
+  })
+  .many('users', {
+    collection: Users,
+    through: 'memberships'
+  });
+
+var user = User.create({id: 3});
+var group = Group.create({id: 6});
+var membership = Membership.create({user_id: 3, group_id: 6});
+
+membership.user() === user; // true
+membership.group() === user; // true
+
+user.memberships().contains(membership); // true
+group.memberships().contains(membership); // true
+
+user.groups().contains(group); // true
+group.users().contains(user); // true</code></pre>
+          </section>
         </div>
       </div>
     </div>
-    <div class='page-container'>
-      <div class='title-block'><a class='h1 light icon-th' name='overview'>Overview</a></div>
-      <div class='hr'></div>
+  </div>
+  <script type="text/javascript" src="js/jquery-1.7.1.min.js"></script>
+  <script type="text/javascript" src="js/highlight.pack.js"></script>
+  <script type="text/javascript">
 
-      <div class='title-block'><a class='h1 light icon-th' name='hasOne'>HasOne</a></div>
-      <div class='hr'></div>
+    $(document).ready(function() {
+      var $navList = $('.nav-list'), $window = $(window), $buttons = $('.fixed-top .btn');
+      $('.colorize').each(function(i, e) {hljs.highlightBlock(e)});
+      $window.on('scroll', function() {
+        if ($window.scrollTop() - $navList.parent().offset()['top'] >= -46) {
+          $navList.css({
+            'position':'fixed',
+            'top':'46px'
+          });
+          $buttons.css({'opacity': '1'});
+        } else {
+          $navList.css({'position':'static'});
+          $buttons.css({'opacity': '0'});
+        }
+      });
+    });
 
-      <div class='title-block'><a class='h1 light icon-th' name='hasMany'>HasMany</a></div>
-      <div class='hr'></div>
-
-      <div class='title-block'><a class='h1 light icon-th' name='hasManyThrough'>HasManyThrough</a></div>
-      <div class='hr'></div>
-
-      <div class='title-block'><a class='h1 light icon-th' name='about'>About</a></div>
-      <div class='hr'></div>
-    </div>      
-  </body>
-</html>
+  </script>
+</body>
