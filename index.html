@@ -2,7 +2,7 @@
 <head>
   <link href='css/monokai.css' media='screen' rel='stylesheet'>
   <link href='css/styles.css' media='screen' rel='stylesheet'>
-  <title>Supermodel.js | Utilities for Backbone Models and Collections</title>
+  <title>Supermodel.js | Model Relationships for Backbone</title>
 </head>
 <body>
   <div class="fixed-top">
@@ -20,7 +20,7 @@
           <div class="mrm">
             <img class='block' src='logo.png'>
           </div>
-          <div class='h2 ptm pbm mrl'>Supermodel is a small extension for tracking collections, models, and their associations with Backbonejs.</div>
+          <div class='h2 ptm pbm mrl'>Supermodel is a small extension for tracking models and their associations with <a href="http://backbonejs.org">Backbone</a>.</div>
           <div class='small quiet mrl'>Note: This is alpha software. A similar version has been used at pathable for quite some time but your milage may vary.</div>
           <div class="ptl">
             <a class="btn" href="//github.com/pathable/supermodel" target="_blank">
@@ -64,16 +64,13 @@ comment.post() === post; // true :D</code></pre>
           <div class='width-20'>
             <ul class='nav-list no-list width-20 pts pbs'>
               <li class="nav-list-item">
+                <a class='strong nav-list-link' href='#source'>Source</a>
+              </li>
+              <li class="nav-list-item">
                 <a class='strong nav-list-link' href='#model'>Model</a>
               </li>
               <li class="nav-list-item">
-                <a class='nav-list-link' href='#model_tracking'>Model Tracking</a>
-              </li>
-              <li class="nav-list-item">
                 <a class='nav-list-link' href='#model.create'>Model.create</a>
-              </li>
-              <li class="nav-list-item">
-                <a class='nav-list-link' href='#collections'>Collections</a>
               </li>
               <li class="nav-list-item">
                 <a class='nav-list-link' href='#model.all'>Model.all</a>
@@ -101,6 +98,10 @@ comment.post() === post; // true :D</code></pre>
         </div>
         <div class="fluid">
           <section>
+            <a class='h1' name='source'>Source</a>
+            <p>The source for Supermodel is <a href="http://github.com/pathable/supermodel">hosted on github</a>.  Please give it a read before trying anything serious as it will greatly improve the utility you gain from the library.  <a href="./docs/supermodel.html">The annotated source</a> is also provided for easier reading.</p>
+          </section>
+          <section>
             <a class='h1' name='model'>Model</a>
             <p>
               <code>Supermodel.Model</code>
@@ -108,35 +109,29 @@ comment.post() === post; // true :D</code></pre>
               <code>Backbone.Model</code>
               <span>that handles the tracking and creation of individual models.</span>
             </p>
-          </section>
-          <section>
-            <a class='h3' name='model_tracking'>Model Tracking</a>
             <p>In large applications there are often multiple model objects representing the same server object. This can cause synchronization problems and cause the display of stale data. For instance:</p>
-            <pre class='colorize language-javascript mbm'><code>var user = new User({id: 5}).fetch();
-...
-var duplicate = new User({id: 5, name: 'brad'}).fetch();
-user.get('name') == duplicate.get('name'); // false :(</code></pre>
+            <pre class='colorize language-javascript'><code>var user = new User({id: 5, admin: true});
+// ...
+var duplicate = new User({id: 5, admin: false});
+user.get('admin'); // true :(</code></pre>
             <p>If the server is updated while these models are being fetched the two instances may have conflicting attributes.  To circumvent this, Supermodel tracks models in the <code>all</code> property of the constructor (which is itself a collection) and returns existing models instead of creating new ones when possible.</p>
-            <pre class='colorize language-javascript'><code>var user = User.create({id: 5});
-User.create({id: 5}) === user; // true
-User.all.get(5) === user; // true</code></pre>
+            <pre class='colorize language-javascript'><code>var user = User.create({id: 5, admin: true});
+var duplicate = User.create({id: 5, admin: false});
+// ...
+duplicate === user; // true
+user.get('admin'); // false :D</code></pre>
           </section>
           <section>
             <a class='h3' name='model.create'>Model.create</a>
             <p>In order to track models, Supermodel needs to check for their existence before returning a new model.  This is the job of <code>Model.create</code>.</p>
             <pre class='colorize language-javascript'><code>var User = Supermodel.Model.extend();
 var user = User.create();</code></pre>
-            <p>You should also use <code>Model.create</code> for the <code>model</code> property of your collections.  This ensures that models created by your collections are tracked and not duplicates.</p>
-            <pre class='colorize language-javascript'><code>var Users = Backbone.Collection.extend({
-  model: User.create
-});</code></pre>
             <p>When using an existing model, it's assumed that the attributes provided are newer than the existing attributes and they are updated.</p>
             <pre class='colorize language-javascript'><code>var user = User.create({id: 5, name: 'bradley'});
 user = User.create({id: 5, name: 'brad'});
 user.get('name'); // brad</code></pre>
           </section>
           <section>
-            <a class='h3' name='Collections'>Collections</a>
             <p>To declare a collection for a <code>Supermodel.Model</code> you'll need to use a factory function rather than simply setting the model.  This is so that collections can also use <code>Model.create</code> and benefit from tracking.</p>
             <pre class='colorize language-javascript'><code>var Users = Backbone.Collection.extend({
 
@@ -145,18 +140,19 @@ user.get('name'); // brad</code></pre>
   }
 
 });</code></pre>
+            <p class="em">Note: You must use a factory function that calls <code>create</code> with the model constructor as context since <code>Backbone.Collection</code> will not do this for you.</p>
           </section>
           <section>
             <a class='h3' name='model.all'>Model.all</a>
-            <p>Each model is stored in the <code>all</code> collection on the constructor for tracking and event propagation.  These are rather handy for tracking events on an entire collection.</p>
+            <p>Each model is stored in a collection on the constructor for tracking and event propagation.  This collection can be retrieved by calling <code>Model.all()</code>.  These are rather handy for tracking events on an entire collection.</p>
             <pre class='colorize language-javascript'><code>var User = Supermodel.Model.extend();
 var user = User.create({id: 3});
-User.all.get(3) === user; // true</code></pre>
+User.all().get(3) === user; // true</code></pre>
             <p>These also work for child constructors.</p>
             <pre class='colorize language-javascript'><code>var Admin = User.extend();
 var admin = Admin.create({id: 2});
-Admin.all.get(2) === admin; // true
-User.all.get(2) === admin; // true</code></pre>
+Admin.all().get(2) === admin; // true
+User.all().get(2) === admin; // true</code></pre>
             <p>A few things to keep in mind about inheritance with <code>all</code> collections:</p>
             <ul>
               <li>All models with a common ancestor in their prototype chain (excluding <code>Supermodel.Model</code>) are assumed to have unique ids.</li>
@@ -166,25 +162,26 @@ User.all.get(2) === admin; // true</code></pre>
             <pre class='colorize language-javascript'><code>var user = User.create({id: 5});
 var impostor = User.create();
 impostor.set({id: 5});
-User.all.get(5) === impostor; // true</code></pre>
+User.all().get(5) === impostor; // true</code></pre>
             <p>It's generally best to not set ids explicitly but only rely on server data for this.</p>
             <p class="em">Note: <code>all</code> collections are not intended to be modified.  Doing so is not
 supported and can have negative consequences for model tracking.</p>
           </section>
           <section>
             <a class='h3' name='model.reset'>Model.reset</a>
-            <p><code>Supermodel.Model.reset</code> is used to remove associations and tracked models so they can be garbage collected.  This is also useful for testing.</p>
+            <p><code>Supermodel.Model.reset</code> is used to remove associations and tracked models so they can be garbage collected.  This is <a href="https://github.com/pathable/supermodel/tree/master/test">most useful for testing</a> and is not generally needed in application code.</p>
             <pre class='colorize language-javascript'><code>var user = User.create({id: 3});
 User.reset();
-User.all.get(3); // null</code></pre>
+User.all().get(3); // null</code></pre>
           </section>
           <section>
             <a class='h1' name='associations'>Associations</a>
-            <p>When initializing models or changing their attributes, there is often plenty of information to wire up associations between models.</p>
+            <p>When initializing models or changing their attributes, there is often plenty of information to wire up associations between models.  For instance, in the following example it's clear that the membership belongs to the user and vice versa.</p>
             <pre class='colorize language-javascript'><code>var user = new User({id: 5});
-var membership = new Membership({id: 2, user_id: 5});
+var membership = new Membership({id: 2, user_id: 5});</code></pre>
 
-membership.user === user; // false :(
+            <p>However, these things must be set manually in practice.</p>
+            <pre class='colorize language-javascript'><code>membership.user === user; // false :(
 user.memberships.contains(membership); // false :(</code></pre>
             <p>The problem is finding the correct model and ensuring it's the canonical representation of that model.  <code>Supermodel.Model</code> already handles these things for us so all that's left is to wire up specific associations.</p>
             <pre class='colorize language-javascript'><code>User.has().many('memberships', {
@@ -202,12 +199,12 @@ var membership = Membership.create({id: 2, user_id: 5});
 
 membership.user() === user; // true :D
 user.memberships().contains(membership); // true :D</code></pre>
-            <p>When models are created or changed, they're inspected for appropriate attributes and the associated properties are set.  When a model becomes associated or dissociated with another model an <code>'associate'</code> or <code>'dissociate'</code> event is triggered, respectively.</p>
+            <p>When models are created or changed, they're inspected for appropriate attributes and the associated properties are set.  When a model becomes associated or dissociated with another model an <code>'associate:&lt;name&gt;'</code> or <code>'dissociate:&lt;name&gt;'</code> event is triggered, respectively.</p>
             <p>Association properties are retrieved using a getter function.  This allows optimizations such as lazy-loading through collections.  Other associations may be lazy-loaded in the future as well.</p>
           </section>
           <section>
             <a class='h3' name='has'>has</a>
-            <p>Associations are specified using <code>Model.has</code>.  This prevents naming collisions and provides a convenient extension point outside of <code>Model</code> itself.</p>
+            <p>Associations are specified using <code>Model.has()</code>.  This prevents naming collisions and provides a convenient extension point outside of <code>Model</code> itself.</p>
           </section>
           <section>
             <a class='h3' name='one'>one</a>
