@@ -323,25 +323,26 @@ group.users().contains(user); // true</code></pre>
       </div>
     </div>
   </div>
-  <script type="text/javascript" src="js/jquery-1.7.1.min.js"></script>
-  <script type="text/javascript" src="js/highlight.pack.js"></script>
-  <script type="text/javascript">
+  <script src="./js/jquery.min.js"></script>
+  <script src="./js/highlight.pack.js"></script>
+  <script>
 
-    $(document).ready(function() {
-      var $navList = $('.nav-list'), $window = $(window), $buttons = $('.fixed-top .btn');
-      $('.colorize').each(function(i, e) {hljs.highlightBlock(e)});
-      $window.on('scroll', function() {
-        if ($window.scrollTop() - $navList.parent().offset()['top'] >= -46) {
-          $navList.css({
-            'position':'fixed',
-            'top':'46px'
-          });
-          $buttons.css({'opacity': '1'});
-        } else {
-          $navList.css({'position':'static'});
-          $buttons.css({'opacity': '0'});
-        }
+    jQuery(function($) {
+
+      var $navList = $('.nav-list').css({top: '46px'});
+      var $window = $(window);
+      var $buttons = $('.fixed-top .btn');
+
+      $('.colorize').each(function() {
+        hljs.highlightBlock(this);
       });
+
+      $window.on('scroll', function() {
+        var scrolled = $window.scrollTop() - $navList.parent().offset().top >= -46;
+        $navList.css({position: scrolled ? 'fixed' : 'static'});
+        $buttons.css({opacity: scrolled ? '1' : '0'});
+      });
+
     });
 
   </script>
