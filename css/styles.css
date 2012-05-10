@@ -3086,7 +3086,7 @@ pre code {
 .main-content {
   padding-top: 35px;
 }
-.nav-list a {
+.nav-list > .nav-list-item > .nav-list-link {
   color: inherit;
   padding: 3px 15px 4px 3px;
   margin-left: -3px;
