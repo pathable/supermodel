@@ -37,10 +37,14 @@ module.exports = function(grunt) {
     }
   });
 
+  // Default tasks.
   grunt.registerTask('default', 'lint qunit');
 
+  // Release task, to be run only just before cutting a release in order to
+  // keep the commit log clean.
   grunt.registerTask('release', 'default docco min');
 
+  // Build docco docs.
   grunt.registerTask('docco', function() {
 
     // Inform grunt when we're finished.
