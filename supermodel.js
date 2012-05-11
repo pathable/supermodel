@@ -75,14 +75,15 @@
         .on('dissociate:' + this.name, this.remove, this);
     },
 
-    // Assign the getter property when a model is created.
+    // Assign the getter/setter when a model is created.
     create: function(model) {
-      model[this.name] = _.bind(this.get, this, model);
+      model[this.name] = _.bind(this.access, this, model);
     },
 
-    // Return the stored model.
-    get: function(model) {
-      return model[this.store];
+    // Return or replace the associated model.
+    access: function(model, other) {
+      if (arguments.length < 2) return model[this.store];
+      this.replace(model, other);
     },
 
     // Parse the models attributes.  If `source` isn't found use the `id`

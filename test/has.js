@@ -216,6 +216,17 @@
     ok(user.settings() === settings);
   });
 
+  test('Set association.', function() {
+    var user = User.create();
+    var settings = Settings.create();
+    user.settings(settings);
+    ok(user.settings() === settings);
+    ok(settings.user() === user);
+    user.settings(null);
+    ok(!user.settings());
+    ok(!settings.user());
+  });
+
   module('Many To One', {setup: setup});
 
   test('Required fields.', function() {
