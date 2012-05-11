@@ -38,17 +38,17 @@
           </div>
           <div class="ptl text-center">
             <a class="btn" href="./supermodel.js">
-              <div class="light small quiet">Development - v0.0.1</div>
+              <div class="light small quiet">Development - 0.0.1</div>
               <span class="h3"><i class="icon-download-alt"></i>supermodel.js</span>
             </a>
             <a class="btn" href="./supermodel.min.js">
-              <div class="light small quiet">Production - v0.0.1</div>
+              <div class="light small quiet">Production - 0.0.1</div>
               <span class="h3"><i class="icon-download-alt"></i>supermodel.min.js</span>
             </a>
           </div>
         </div><div class="fluid-1">
           <pre class="mll hero colorize language-javascript"><code>Post.has().many('comments', {
-  collection: Posts,
+  collection: Comments,
   inverse: 'post'
 });
 
@@ -85,8 +85,11 @@ comment.post() === post; // true :D</code></pre>
               <li class="nav-list-item">
                 <a class='nav-list-link' href='#model.all'>Model.all</a>
               </li>
-              <li class="nav-list-item mbm">
+              <li class="nav-list-item">
                 <a class='nav-list-link' href='#model.reset'>Model.reset</a>
+              </li>
+              <li class="nav-list-item mbm">
+                <a class='nav-list-link' href='#model.prototype.parse'>Model.prototype.parse</a>
               </li>
               <li class="nav-list-item">
                 <a class='strong nav-list-link' href='#associations'>Associations</a>
@@ -138,7 +141,7 @@ user.get('admin'); // false :D</code></pre>
 var user = User.create();</code></pre>
             <p>When using an existing model, it's assumed that the attributes provided are newer than the existing attributes and they are updated.</p>
             <pre class='colorize language-javascript'><code>var user = User.create({id: 5, name: 'bradley'});
-user = User.create({id: 5, name: 'brad'});
+var duplicate = User.create({id: 5, name: 'brad'});
 user.get('name'); // brad</code></pre>
           </section>
           <section>
@@ -183,6 +186,24 @@ supported and can have negative consequences for model tracking.</p>
             <pre class='colorize language-javascript'><code>var user = User.create({id: 3});
 User.reset();
 User.all().get(3); // null</code></pre>
+          </section>
+          <section>
+            <a class='h3' name='model.prototype.parse'>Model.prototoype.parse</a>
+            <p>In order to prevent conflicts between associations and their corresponding attributes, nested data is used and removed with <code>model.parse</code>.  Parsing is also done on new models during initialization.</p>
+            <p>Nested data can be provided through the <code>source</code> property in a model's attributes.</p>
+            <pre class='colorize language-javascript'><code>var post = new Post({
+  id: 1,
+  comments: [
+    {id: 2, body: '&hellip;'},
+    {id: 3, body: '&hellip;'}
+  ]
+});</code></pre>
+            <p>Associations can also be specified through <code>id</code> properties.</p>
+            <pre class='colorize language-javascript'><code>var comment = new Comment({
+  id: 4,
+  body: '&hellip;',
+  post_id: 1
+});</code></pre>
           </section>
           <section>
             <a class='h1' name='associations'>Associations</a>
