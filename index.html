@@ -89,7 +89,7 @@ comment.post() === post; // true :D</code></pre>
                 <a class='nav-list-link' href='#model.reset'>Model.reset</a>
               </li>
               <li class="nav-list-item mbm">
-                <a class='nav-list-link' href='#model.prototype.parse'>Model.prototype.parse</a>
+                <a class='nav-list-link' href='#parse'>parse</a>
               </li>
               <li class="nav-list-item">
                 <a class='strong nav-list-link' href='#associations'>Associations</a>
@@ -188,7 +188,7 @@ User.reset();
 User.all().get(3); // null</code></pre>
           </section>
           <section>
-            <a class='h3' name='model.prototype.parse'>Model.prototoype.parse</a>
+            <a class='h3' name='parse'>Model.prototoype.parse</a>
             <p>In order to prevent conflicts between associations and their corresponding attributes, nested data is used and removed with <code>model.parse</code>.  Parsing is also done on new models during initialization.</p>
             <p>Nested data can be provided through the <code>source</code> property in a model's attributes.</p>
             <pre class='colorize language-javascript'><code>var post = new Post({
@@ -228,8 +228,8 @@ Membership.has().one('user', {
 var user = User.create({id: 5});
 var membership = Membership.create({id: 2, user_id: 5});
 
-membership.user() === user; // true :D
-user.memberships().contains(membership); // true :D</code></pre>
+membership.user() === user; // true \o/
+user.memberships().contains(membership); // true \o/</code></pre>
             <p>When models are created or changed, they're inspected for appropriate attributes and the associated properties are set.  When a model becomes associated or dissociated with another model an <code>'associate:&lt;name&gt;'</code> or <code>'dissociate:&lt;name&gt;'</code> event is triggered, respectively.</p>
             <p>Association properties are retrieved using a getter function.  This allows optimizations such as lazy-loading through collections.  Other associations may be lazy-loaded in the future as well.</p>
           </section>
