@@ -27,8 +27,12 @@
 
     // Store a reference to this association by name after ensuring it's
     // unique.
-    if (model.associations()[this.name]) {
-      throw new Error('Association already exists: ' + this.name);
+    var ctor = model;
+    while (ctor !== Model) {
+      if (ctor.associations()[this.name]) {
+        throw new Error('Association already exists: ' + this.name);
+      }
+      ctor = ctor.__super__.constructor;
     }
     model.associations()[this.name] = this;
 
@@ -417,7 +421,7 @@
 
       // Add the model to `all` for each constructor in its prototype chain.
       var ctor = this.constructor;
-      while (ctor && ctor !== Model) {
+      while (ctor !== Model) {
         ctor.all().add(this);
         ctor = ctor.__super__.constructor;
       }

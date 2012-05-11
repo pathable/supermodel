@@ -4,6 +4,7 @@
   var Collection = Backbone.Collection;
 
   var User = Model.extend();
+  var Admin = User.extend();
   var Membership = Model.extend();
   var Group = Model.extend();
   var Settings = Model.extend({idAttribute: '_id'});
@@ -33,6 +34,7 @@
   var setup = function() {
 
     User.reset();
+    Admin.reset();
     Settings.reset();
     Membership.reset();
     Group.reset();
@@ -99,6 +101,7 @@
   });
 
   test('Adding duplicate associations throws.', function() {
+
     raises(function() {
       User.has().one('settings', {
         model: Settings,
@@ -107,6 +110,16 @@
     }, function(e) {
       return e.message === 'Association already exists: settings';
     });
+
+    raises(function() {
+      Admin.has().one('settings', {
+        model: Settings,
+        inverse: 'user'
+      });
+    }, function(e) {
+      return e.message === 'Association already exists: settings';
+    });
+
   });
 
   module('One', {setup: setup});
