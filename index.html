@@ -8,8 +8,8 @@
   <div class="fixed-top">
     <div class="page-container">
       <a class="small btn pull-left icon-github-sign mrs" href="//github.com/pathable/supermodel" target="_blank">Github</a>
-      <span class="small btn pull-left icon-download-alt mrs" href="//github.com/pathable/supermodel/zipball/master">Zip</span>
-      <span class="small btn pull-left icon-download-alt mrs" href="//github.com/pathable/supermodel/tarball/master">Tar</span>
+      <a class="small btn pull-left icon-download-alt mrs" href="//github.com/pathable/supermodel/zipball/master">Zip</a>
+      <a class="small btn pull-left icon-download-alt mrs" href="//github.com/pathable/supermodel/tarball/master">Tar</a>
       <div class="h3 light text-right prl">Supermodel is sponsored by <a href="//github.com/pathable" target="_blank"><img class="height-2" src="pathable.png" alt="Pathable, Inc."></a></div>
     </div>
   </div>
@@ -22,7 +22,7 @@
           </div>
           <div class='h2 ptm pbm mrl'>Supermodel is a small extension for tracking model relationships with <a href="http://backbonejs.org">Backbone</a>.</div>
           <div class='small quiet mrl'>Note: This is alpha software. A similar version has been used at pathable for quite some time but your milage may vary.</div>
-          <div class="ptl">
+          <div class="ptl text-center">
             <a class="btn" href="//github.com/pathable/supermodel" target="_blank">
               <div class="light small quiet">Fork on</div>
               <span class="h3"><i class="icon-github-sign"></i>Github</span>
@@ -36,10 +36,15 @@
               <span class="h3"><i class="icon-download-alt"></i>Tar File</span>
             </a>
           </div>
-          <div class="ptl">
-            <a href="./supermodel.js">supermodel.js - v0.0.1</a>
-            <br>
-            <a href="./supermodel.min.js">supermodel.min.js - v0.0.1</a>
+          <div class="ptl text-center">
+            <a class="btn" href="./supermodel.js">
+              <div class="light small quiet">Development - v0.0.1</div>
+              <span class="h3"><i class="icon-download-alt"></i>supermodel.js</span>
+            </a>
+            <a class="btn" href="./supermodel.min.js">
+              <div class="light small quiet">Production - v0.0.1</div>
+              <span class="h3"><i class="icon-download-alt"></i>supermodel.min.js</span>
+            </a>
           </div>
         </div><div class="fluid-1">
           <pre class="mll hero colorize language-javascript"><code>Post.has().many('comments', {
