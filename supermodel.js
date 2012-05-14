@@ -505,8 +505,9 @@
   // Throw if the specified options are not provided.
   var required = function(options) {
     for (var i = 1; i < arguments.length; i++) {
-      if (!options[arguments[i]]) {
-        throw new Error('Option required: ' + arguments[i]);
+      var option = arguments[i];
+      if (!options[option]) {
+        throw new Error('Option required: ' + option);
       }
     }
   };
