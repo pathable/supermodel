@@ -82,4 +82,16 @@
     ok(Model.create({_id: 1}) === model);
   });
 
+  test('Instantiating an existing object as a subclass throws.', function() {
+    var admin;
+    var user = User.create({id: 1});
+    raises(function() {
+      var admin = Admin.create({id: 1});
+    }, function(e) {
+      return e.message === 'Model with id "1" already exists.';
+    });
+    ok(!Admin.all().include(admin));
+    ok(User.all().include(user));
+  });
+
 })();

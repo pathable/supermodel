@@ -466,6 +466,17 @@
         return model;
       }
 
+      if (!id) return new this(attrs, options);
+
+      // Throw if a model already exists with the same id in a superclass.
+      var ctor = this;
+      while (ctor !== Model) {
+        if (ctor.all().get(id)) {
+          throw new Error('Model with id "' + id + '" already exists.');
+        }
+        ctor = ctor.__super__.constructor;
+      }
+
       return new this(attrs, options);
     },
 
