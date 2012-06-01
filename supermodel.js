@@ -7,7 +7,7 @@
   var Supermodel = root.Supermodel = {};
 
   // Current version.
-  Supermodel.VERSION = '0.0.1';
+  Supermodel.VERSION = '0.0.2';
 
   // Local reference to Collection.
   var Collection = Backbone.Collection;
