@@ -441,6 +441,7 @@
     // the `'parse'` event and remove the appropriate properties after parsing.
     parse: function(resp) {
       this.trigger('parse', this, resp);
+      return resp;
     }
 
   }, {

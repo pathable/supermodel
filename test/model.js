@@ -94,4 +94,10 @@
     ok(User.all().include(user));
   });
 
+  test('Parse returns the response.', function() {
+    var user = User.create({id: 1});
+    var resp = {};
+    ok(user.parse(resp) === resp);
+  });
+
 })();
