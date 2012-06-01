@@ -481,7 +481,8 @@
     raises(function() {
       User.has().many(null, {
         collection: Collection,
-        through: 'through'
+        through: 'through',
+        source: 'source'
       });
     }, function(e) {
       return e.message === 'Option required: name';
@@ -489,12 +490,21 @@
 
     raises(function() {
       User.has().many('name', {
-        inverse: 'inverse',
+        source: 'source',
         through: 'through'
       });
     }, function(e) {
       return e.message === 'Option required: collection';
     }, 'collection');
+
+    raises(function() {
+      User.has().many('name', {
+        through: 'through',
+        collection: Collection
+      });
+    }, function(e) {
+      return e.message === 'Option required: source';
+    }, 'source');
 
   });
 
