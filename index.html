@@ -157,7 +157,7 @@ user.get('name'); // brad</code></pre>
           </section>
           <section>
             <a class='h3' name='model.all'>Model.all</a>
-            <p>Each model is stored in a collection on the constructor for tracking and event propagation.  This collection can be retrieved by calling <code>Model.all()</code>.  These are rather handy for tracking events on an entire collection.</p>
+            <p>Each model is stored in a collection on the constructor for tracking and event propagation.  This collection can be retrieved by calling <code>Model.all()</code>.  These are rather handy for tracking all events for models of a given type.</p>
             <pre class='colorize language-javascript'><code>var User = Supermodel.Model.extend();
 var user = User.create({id: 3});
 User.all().get(3) === user; // true</code></pre>

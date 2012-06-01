@@ -279,7 +279,7 @@
   var ManyToMany = Association.extend({
 
     constructor: function(model, options) {
-      required(options, 'collection', 'through');
+      required(options, 'collection', 'through', 'source');
       Association.apply(this, arguments);
       _.extend(this, _.pick(options, 'collection', 'through'));
       this._associate = andThis(this._associate, this);
