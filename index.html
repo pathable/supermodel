@@ -308,6 +308,7 @@ collections.  For example:</p>
     inverse: 'user'
   })
   .many('groups', {
+    source: 'group',
     collection: Groups,
     through: 'memberships'
   });
@@ -328,6 +329,7 @@ Group.has()
     inverse: 'group'
   })
   .many('users', {
+    source: 'user',
     collection: Users,
     through: 'memberships'
   });
