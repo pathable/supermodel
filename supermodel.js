@@ -20,7 +20,7 @@
   // Track associations between models.  Associated attributes are used and
   // then removed during `parse`.
   var Association = function(model, options) {
-    required(options, 'name');
+    this.required(options, 'name');
     _.extend(this, _.pick(options, 'name', 'where'));
     this.source = options.source || this.name;
     this.store = options.store || '_' + this.name;
@@ -60,6 +60,15 @@
     dissociate: function(model, other) {
       if (!this.inverse) return;
       model.trigger('dissociate:' + this.inverse, model, other);
+    },
+
+    // Throw if the specified options are not provided.
+    required: function(options) {
+      var option;
+      for (var i = 1; i < arguments.length; i++) {
+        if (options[option = arguments[i]]) continue;
+        throw new Error('Option required: ' + option);
+      }
     }
 
   });
@@ -70,7 +79,7 @@
   var One = Association.extend({
 
     constructor: function(model, options) {
-      required(options, 'inverse', 'model');
+      this.required(options, 'inverse', 'model');
       Association.apply(this, arguments);
       _.extend(this, _.pick(options, 'inverse', 'model'));
       this.id = options.id || this.name + '_id';
@@ -166,7 +175,7 @@
   var ManyToOne = Association.extend({
 
     constructor: function(model, options) {
-      required(options, 'inverse', 'collection');
+      this.required(options, 'inverse', 'collection');
       Association.apply(this, arguments);
       _.extend(this, _.pick(options, 'collection', 'comparator', 'inverse'));
       model.all()
@@ -279,7 +288,7 @@
   var ManyToMany = Association.extend({
 
     constructor: function(model, options) {
-      required(options, 'collection', 'through', 'source');
+      this.required(options, 'collection', 'through', 'source');
       Association.apply(this, arguments);
       _.extend(this, _.pick(options, 'collection', 'through'));
       this._associate = andThis(this._associate, this);
@@ -397,7 +406,8 @@
     //   inverse association.
     // * **through** - (*required for many-to-many associations*) The name of the
     //   through association.
-    // * **source** - The attribute where nested data is stored.
+    // * **source** - (*required for many-to-many associations*) The attribute
+    //   where nested data is stored.
     // * **store** - The property to store the association in.
     //   Defaults to '_' + `name`.
     many: function(name, options) {
@@ -512,16 +522,6 @@
       var args = [this].concat(_.toArray(arguments));
       return func.apply(context, args);
     };
-  };
-
-  // Throw if the specified options are not provided.
-  var required = function(options) {
-    for (var i = 1; i < arguments.length; i++) {
-      var option = arguments[i];
-      if (!options[option]) {
-        throw new Error('Option required: ' + option);
-      }
-    }
   };
 
 }).call(this, Backbone);
