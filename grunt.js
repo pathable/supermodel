@@ -3,8 +3,13 @@ var exec = require('child_process').exec;
 module.exports = function(grunt) {
 
   grunt.initConfig({
-    qunit: ['./test/index.html'],
-    lint: ['supermodel.js', './test/*.js'],
+    qunit: {
+      supermodel: ['./test/index.html']
+    },
+    lint: {
+      supermodel: ['supermodel.js'],
+      test: ['./test/*.js']
+    },
     min: {
       'supermodel.min.js': 'supermodel.js'
     },
