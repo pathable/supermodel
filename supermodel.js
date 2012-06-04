@@ -69,6 +69,15 @@
         if (options[option = arguments[i]]) continue;
         throw new Error('Option required: ' + option);
       }
+    },
+
+    // Wrap a function in order to capture it's context, prepend it to the
+    // arguments and call it with the current context.
+    andThis: function(func) {
+      var context = this;
+      return function() {
+        return func.apply(context, [this].concat(_.toArray(arguments)));
+      };
     }
 
   });
@@ -291,8 +300,8 @@
       this.required(options, 'collection', 'through', 'source');
       Association.apply(this, arguments);
       _.extend(this, _.pick(options, 'collection', 'through'));
-      this._associate = andThis(this._associate, this);
-      this._dissociate = andThis(this._dissociate, this);
+      this._associate = this.andThis(this._associate);
+      this._dissociate = this.andThis(this._dissociate);
     },
 
     // When a new model is created, assign the getter.
@@ -514,14 +523,5 @@
     }
 
   });
-
-  // Capture a functions context (this), prepend it to the arguments, and call
-  // the function with the provided context.
-  var andThis = function(func, context) {
-    return function() {
-      var args = [this].concat(_.toArray(arguments));
-      return func.apply(context, args);
-    };
-  };
 
 }).call(this, Backbone);
