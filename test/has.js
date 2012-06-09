@@ -270,11 +270,6 @@
     }, 'collection');
   });
 
-  test('Set inverse property.', function() {
-    var user = User.create();
-    ok(user.memberships().user === user);
-  });
-
   test('Many is initialized only once.', function() {
     var user = User.create();
     var memberships = user.memberships();

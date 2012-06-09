@@ -212,7 +212,7 @@
 
       // We'll need to know what model "owns" this collection in order to
       // handle events that it triggers.
-      collection[this.inverse] = collection.owner = model;
+      collection.owner = model;
     },
 
     // Return the associated collection.
