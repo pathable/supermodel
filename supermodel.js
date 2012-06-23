@@ -186,7 +186,7 @@
     constructor: function(model, options) {
       this.required(options, 'inverse', 'collection');
       Association.apply(this, arguments);
-      _.extend(this, _.pick(options, 'collection', 'comparator', 'inverse'));
+      _.extend(this, _.pick(options, 'collection', 'inverse'));
       model.all()
         .on('associate:' + this.name, this._associate, this)
         .on('dissociate:' + this.name, this._dissociate, this);
@@ -205,9 +205,7 @@
 
       // Create the collection for storing the associated models.  Listen for
       // "add", "remove", and "reset" events and act accordingly.
-      collection = model[this.store] = new this.collection([], {
-        comparator: this.comparator
-      })
+      collection = model[this.store] = new this.collection()
       .on('add', this.add, this)
       .on('remove', this.remove, this)
       .on('reset', this.reset, this);
@@ -313,8 +311,8 @@
       var collection = model[this.store];
       if (collection) return collection;
 
-      // Create a new collection with the appropriate comparator.
-      collection = new this.collection([], {comparator: this.comparator});
+      // Create a new collection.
+      collection = new this.collection();
 
       // We'll need to know what model "owns" this collection in order to
       // handle events that it triggers.
