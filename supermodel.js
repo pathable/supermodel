@@ -21,9 +21,11 @@
   // then removed during `parse`.
   var Association = function(model, options) {
     this.required(options, 'name');
-    _.extend(this, _.pick(options, 'name', 'where'));
-    this.source = options.source || this.name;
-    this.store = options.store || '_' + this.name;
+    _.extend(this, _.pick(options, 'name', 'where', 'source', 'store'));
+    _.defaults(this, {
+      source: this.name,
+      store: '_' + this.name
+    });
 
     // Store a reference to this association by name after ensuring it's
     // unique.
@@ -91,7 +93,9 @@
       this.required(options, 'inverse', 'model');
       Association.apply(this, arguments);
       _.extend(this, _.pick(options, 'inverse', 'model'));
-      this.id = options.id || this.name + '_id';
+      _.defaults(this, {
+        id: this.name + '_id'
+      });
       model.all()
         .on('associate:' + this.name, this.replace, this)
         .on('dissociate:' + this.name, this.remove, this);
