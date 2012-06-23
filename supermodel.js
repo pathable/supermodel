@@ -333,8 +333,7 @@
 
     // Add models to the collection when added to the through collection.
     add: function(model, through) {
-      if (!model || !through) return;
-      if (!(model = model[this.source]())) return;
+      if (!model || !through || !(model = model[this.source]())) return;
       if (this.where && !this.where(model)) return;
       through.owner[this.name]().add(model);
     },
@@ -342,8 +341,7 @@
     // Remove models from the collection when removed from the through
     // collection after checking for other instances.
     remove: function(model, through) {
-      if (!model || !through) return;
-      if (!(model = model[this.source]())) return;
+      if (!model || !through || !(model = model[this.source]())) return;
       var exists = through.any(function(o) {
         return o[this.source]() === model;
       }, this);
