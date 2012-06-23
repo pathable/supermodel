@@ -195,11 +195,13 @@
     // When a model is created, instantiate the associated collection and
     // assign it using `store`.
     create: function(model) {
-      model[this.name] = _.bind(this.get, this, model);
+      if (!model[this.name]) model[this.name] = _.bind(this.get, this, model);
+    },
 
-      // Bail if the collection already exists.
+    // Return the associated collection.
+    get: function(model) {
       var collection = model[this.store];
-      if (collection) return;
+      if (collection) return collection;
 
       // Create the collection for storing the associated models.  Listen for
       // "add", "remove", and "reset" events and act accordingly.
@@ -213,11 +215,8 @@
       // We'll need to know what model "owns" this collection in order to
       // handle events that it triggers.
       collection.owner = model;
-    },
 
-    // Return the associated collection.
-    get: function(model) {
-      return model[this.store];
+      return collection;
     },
 
     // Use the `source` property to reset the collection with the given models
@@ -226,7 +225,7 @@
       var attrs = resp[this.source];
       if (!attrs) return;
       delete resp[this.source];
-      var collection = model[this.store];
+      var collection = this.get(model);
       attrs = collection.parse(attrs);
 
       // If `where` is not specified, reset the collection and bail.
@@ -278,9 +277,9 @@
 
     // Associated models should be added to the collection.
     _associate: function(model, other) {
-      if (!model || !other || !model[this.store]) return;
+      if (!model || !other) return;
       if (this.where && !this.where(other)) return;
-      model[this.store].add(other);
+      this.get(model).add(other);
     },
 
     // Dissociated models should be removed from the collection.
@@ -312,23 +311,23 @@
     // Lazy load the associated collection to avoid initialization costs.
     get: function(model) {
       var collection = model[this.store];
+      if (collection) return collection;
 
-      if (!collection) {
-        collection = new this.collection([], {comparator: this.comparator});
+      // Create a new collection with the appropriate comparator.
+      collection = new this.collection([], {comparator: this.comparator});
 
-        // We'll need to know what model "owns" this collection in order to
-        // handle events that it triggers.
-        collection.owner = model;
-        model[this.store] = collection;
+      // We'll need to know what model "owns" this collection in order to
+      // handle events that it triggers.
+      collection.owner = model;
+      model[this.store] = collection;
 
-        // Initialize listeners and models.
-        this.reset(model[this.through]()
-          .on('add', this.add, this)
-          .on('remove', this.remove, this)
-          .on('reset', this.reset, this)
-          .on('associate:' + this.source, this._associate)
-          .on('dissociate:' + this.source, this._dissociate));
-      }
+      // Initialize listeners and models.
+      this.reset(model[this.through]()
+        .on('add', this.add, this)
+        .on('remove', this.remove, this)
+        .on('reset', this.reset, this)
+        .on('associate:' + this.source, this._associate)
+        .on('dissociate:' + this.source, this._dissociate));
 
       return collection;
     },
@@ -515,8 +514,9 @@
       return this._associations || (this._associations = {});
     },
 
-    // Models are globally tracked via the `all` property on the constructor.
-    // Associations are tracked via the `associations` property.
+    // Models and associations are tracked via `all` and `associations`,
+    // respectively.  `reset` removes all model references to allow garbage
+    // collection.
     reset: function() {
       this._all = new Collection();
       this._associations = {};

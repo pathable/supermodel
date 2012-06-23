@@ -94,6 +94,13 @@
 
   module('Associations', {setup: setup});
 
+  test('Associations are created lazily.', function() {
+    var user = User.create({id: 5});
+    _.each(_.values(User.associations()), function(association) {
+      ok(!user[association.store]);
+    });
+  });
+
   test('Collections handle duplicates correctly.', function() {
     var users = new Users([{id: 1}]);
     users.add({id: 1, name: 'brad'});
