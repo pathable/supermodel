@@ -29,13 +29,10 @@
 
     // Store a reference to this association by name after ensuring it's
     // unique.
-    var ctor = model;
-    while (ctor !== Model) {
-      if (ctor.associations()[this.name]) {
-        throw new Error('Association already exists: ' + this.name);
-      }
-      ctor = ctor.__super__.constructor;
-    }
+    _.each(model.supers(), function(ctor) {
+      if (!ctor.associations()[this.name]) return;
+      throw new Error('Association already exists: ' + this.name);
+    }, this);
     model.associations()[this.name] = this;
 
     // Listen for relevant events.
@@ -440,11 +437,9 @@
       this.set(this.cidAttribute, this.cid);
 
       // Add the model to `all` for each constructor in its prototype chain.
-      var ctor = this.constructor;
-      while (ctor !== Model) {
-        ctor.all().add(this);
-        ctor = ctor.__super__.constructor;
-      }
+      _.each(this.constructor.supers(), function(s) {
+        s.all().add(this);
+      }, this);
 
       // Trigger 'initialize' for listening associations.
       this.trigger('initialize', this);
@@ -490,13 +485,10 @@
       if (!id) return new this(attrs, options);
 
       // Throw if a model already exists with the same id in a superclass.
-      var ctor = this;
-      while (ctor !== Model) {
-        if (ctor.all().get(id)) {
-          throw new Error('Model with id "' + id + '" already exists.');
-        }
-        ctor = ctor.__super__.constructor;
-      }
+      _.each(this.supers(), function(ctor) {
+        if (!ctor.all().get(id)) return;
+        throw new Error('Model with id "' + id + '" already exists.');
+      });
 
       return new this(attrs, options);
     },
@@ -509,6 +501,14 @@
     // Return a collection of all models for a particular constructor.
     all: function() {
       return this._all || (this._all = new Collection());
+    },
+
+    // Return a list of superclasses, not including Supermodel.Model.
+    supers: function() {
+      var ctor = this;
+      var supers = [this];
+      while ((ctor = ctor.__super__.constructor) !== Model) supers.push(ctor);
+      return supers;
     },
 
     // Return a hash of all associations for a particular constructor.
