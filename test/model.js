@@ -100,4 +100,8 @@
     ok(user.parse(resp) === resp);
   });
 
+  test('Model.create doesn\'t throw.', 0, function() {
+    Model.create({id: 1});
+  });
+
 })();

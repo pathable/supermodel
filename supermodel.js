@@ -505,6 +505,7 @@
     supers: function() {
       var ctor = this;
       var supers = [this];
+      if (this === Model) return supers;
       while ((ctor = ctor.__super__.constructor) !== Model) supers.push(ctor);
       return supers;
     },
