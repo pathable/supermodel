@@ -4,7 +4,7 @@
   var Collection = Backbone.Collection;
 
   var User = Model.extend();
-  var Admin = User.extend();
+  var Admin = User.extend({}, {parent: User});
 
   module('Model', {
 
@@ -47,11 +47,11 @@
   test('Add model to all during initialize', function() {
     var Test = Model.extend({
       constructor: function(attrs, options) {
-        var o = Test.__super__.constructor.apply(this, arguments);
+        var o = Model.apply(this, arguments);
         if (o) return o;
       },
       initialize: function() {
-        Test.__super__.initialize.apply(this, arguments);
+        Model.prototype.initialize.apply(this, arguments);
         ok(Test.create({id: 1}) === this);
       }
     });

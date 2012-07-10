@@ -29,10 +29,11 @@
 
     // Store a reference to this association by name after ensuring it's
     // unique.
-    _.each(model.supers(), function(ctor) {
-      if (!ctor.associations()[this.name]) return;
+    var ctor = model;
+    do {
+      if (!ctor.associations()[this.name]) continue;
       throw new Error('Association already exists: ' + this.name);
-    }, this);
+    } while (ctor = ctor.parent);
     model.associations()[this.name] = this;
 
     // Listen for relevant events.
@@ -435,9 +436,8 @@
       this.set(this.cidAttribute, this.cid);
 
       // Add the model to `all` for each constructor in its prototype chain.
-      _.each(this.constructor.supers(), function(s) {
-        s.all().add(this);
-      }, this);
+      var ctor = this.constructor;
+      do { ctor.all().add(this); } while (ctor = ctor.parent);
 
       // Trigger 'initialize' for listening associations.
       this.trigger('initialize', this);
@@ -483,10 +483,11 @@
       if (!id) return new this(attrs, options);
 
       // Throw if a model already exists with the same id in a superclass.
-      _.each(this.supers(), function(ctor) {
-        if (!ctor.all().get(id)) return;
+      var ctor = this;
+      do {
+        if (!ctor.all().get(id)) continue;
         throw new Error('Model with id "' + id + '" already exists.');
-      });
+      } while (ctor = ctor.parent);
 
       return new this(attrs, options);
     },
@@ -499,15 +500,6 @@
     // Return a collection of all models for a particular constructor.
     all: function() {
       return this._all || (this._all = new Collection());
-    },
-
-    // Return a list of superclasses, not including Supermodel.Model.
-    supers: function() {
-      var ctor = this;
-      var supers = [this];
-      if (this === Model) return supers;
-      while ((ctor = ctor.__super__.constructor) !== Model) supers.push(ctor);
-      return supers;
     },
 
     // Return a hash of all associations for a particular constructor.

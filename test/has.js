@@ -4,7 +4,7 @@
   var Collection = Backbone.Collection;
 
   var User = Model.extend();
-  var Admin = User.extend();
+  var Admin = User.extend({}, {parent: User});
   var Membership = Model.extend();
   var Group = Model.extend();
   var Settings = Model.extend({idAttribute: '_id'});

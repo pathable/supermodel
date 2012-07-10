@@ -22,7 +22,8 @@ module.exports = function(grunt) {
     jshint: {
       options: {
         eqnull: true,
-        undef: true
+        undef: true,
+        boss: true
       },
       globals: {
         // QUnit
