@@ -2,7 +2,7 @@
 <head>
   <link href='css/monokai.css' media='screen' rel='stylesheet'>
   <link href='css/styles.css' media='screen' rel='stylesheet'>
-  <title>Supermodel.js | Model Relationships for Backbone</title>
+  <title>Supermodel.js | Minimal Model Tracking for Backbone</title>
 </head>
 <body>
   <div class="fixed-top">
@@ -96,6 +96,9 @@ comment.post() === post; // true :D</code></pre>
               </li>
               <li class="nav-list-item">
                 <a class='nav-list-link' href='#has'>has</a>
+              </li>
+              <li class="nav-list-item">
+                <a class='nav-list-link' href='#owner'>owner</a>
               </li>
               <li class="nav-list-item">
                 <a class='nav-list-link' href='#one'>one</a>
@@ -236,6 +239,19 @@ user.memberships().contains(membership); // true \o/</code></pre>
           <section>
             <a class='h3' name='has'>has</a>
             <p>Associations are specified using <code>Model.has()</code>.  This prevents naming collisions and provides a convenient extension point outside of <code>Model</code> itself.</p>
+          </section>
+          <section>
+            <a class='h3' name='owner'>owner</a>
+            <p>A reference to the model that owns an associated collection.  This is useful when specifying a collection url that's relative to its owner.</p>
+            <pre class='colorize language-javascript'><code>Post.has().many('comments', {
+  inverse: 'post',
+  collection: Comments.extend({
+    url: function() {
+      return '/posts/' + this.owner.id + '/comments';
+    }
+  })
+});
+</code></pre>
           </section>
           <section>
             <a class='h3' name='one'>one</a>
