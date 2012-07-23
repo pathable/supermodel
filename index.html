@@ -38,11 +38,11 @@
           </div>
           <div class="ptl text-center">
             <a class="btn" href="./supermodel.js">
-              <div class="light small quiet">Development - 0.0.3</div>
+              <div class="light small quiet">Development - 0.0.4</div>
               <span class="h3"><i class="icon-download-alt"></i>supermodel.js</span>
             </a>
             <a class="btn" href="./supermodel.min.js">
-              <div class="light small quiet">Production - 0.0.3</div>
+              <div class="light small quiet">Production - 0.0.4</div>
               <span class="h3"><i class="icon-download-alt"></i>supermodel.min.js</span>
             </a>
           </div>
@@ -77,6 +77,12 @@ comment.post() === post; // true :D</code></pre>
                 <a class='strong nav-list-link' href='#source'>Source</a>
               </li>
               <li class="nav-list-item">
+                <a class='strong nav-list-link' href='#change-log'>Change Log</a>
+              </li>
+              <li class="nav-list-item mbm">
+                <a class='nav-list-link' href='#0.0.4'>0.0.4</a>
+              </li>
+              <li class="nav-list-item">
                 <a class='strong nav-list-link' href='#model'>Model</a>
               </li>
               <li class="nav-list-item">
@@ -87,6 +93,9 @@ comment.post() === post; // true :D</code></pre>
               </li>
               <li class="nav-list-item">
                 <a class='nav-list-link' href='#model.reset'>Model.reset</a>
+              </li>
+              <li class="nav-list-item">
+                <a class='nav-list-link' href='#model.parent'>Model.parent</a>
               </li>
               <li class="nav-list-item mbm">
                 <a class='nav-list-link' href='#parse'>parse</a>
@@ -116,6 +125,13 @@ comment.post() === post; // true :D</code></pre>
           <section>
             <a class='h1' name='source'>Source</a>
             <p>The source for Supermodel is <a href="http://github.com/pathable/supermodel">hosted on github</a>.  Please give it a read before trying anything serious as it will greatly improve the utility you gain from the library.  <a href="./docs/supermodel.html">The annotated source</a> is also provided for easier reading. Supermodel is available for use under the <a href="https://github.com/pathable/supermodel/blob/master/LICENSE">MIT software license</a>.</p>
+          </section>
+          <section>
+            <a class='h1' name='change-log'>Change Log</a>
+            <p><a class='h3' name='0.0.4'>0.0.4</a></p>
+            <ul>
+              <li><p><b>Model.parent</b> - Supermodel will no longer use <code>__super__</code> to infer model relationships.  Instead, they should be declared with <a href='#model.parent'><code>Model.parent</code></a></p></li>
+            </ul>
           </section>
           <section>
             <a class='h1' name='model'>Model</a>
@@ -189,6 +205,13 @@ supported and can have negative consequences for model tracking.</p>
             <pre class='colorize language-javascript'><code>var user = User.create({id: 3});
 User.reset();
 User.all().get(3); // null</code></pre>
+          </section>
+          <section>
+            <a class='h3' name='model.parent'>Model.parent</a>
+            <p>The parent constructor, used to indicate that Supermodel should track inherited instances.  Constructors are otherwise treated as stand alone models, regardless of prototype chain.</p>
+            <pre class='colorize language-javascript'><code>var Admin = User.extend({
+  parent: User
+});</code></pre>
           </section>
           <section>
             <a class='h3' name='parse'>Model.prototoype.parse</a>
