@@ -1,7 +1,4 @@
 {
   "name": "supermodel",
-  "version": "0.0.3",
-  "devDependencies": {
-    "grunt": "0.3.7"
-  }
+  "version": "0.0.4"
 }

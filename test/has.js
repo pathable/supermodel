@@ -4,7 +4,7 @@
   var Collection = Backbone.Collection;
 
   var User = Model.extend();
-  var Admin = User.extend();
+  var Admin = User.extend({}, {parent: User});
   var Membership = Model.extend();
   var Group = Model.extend();
   var Settings = Model.extend({idAttribute: '_id'});
@@ -93,6 +93,13 @@
   };
 
   module('Associations', {setup: setup});
+
+  test('Associations are created lazily.', function() {
+    var user = User.create({id: 5});
+    _.each(_.values(User.associations()), function(association) {
+      ok(!user[association.store]);
+    });
+  });
 
   test('Collections handle duplicates correctly.', function() {
     var users = new Users([{id: 1}]);
@@ -268,11 +275,6 @@
     }, function(e) {
       return e.message === 'Option required: collection';
     }, 'collection');
-  });
-
-  test('Set inverse property.', function() {
-    var user = User.create();
-    ok(user.memberships().user === user);
   });
 
   test('Many is initialized only once.', function() {

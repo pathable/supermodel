@@ -2,7 +2,7 @@
 <head>
   <link href='css/monokai.css' media='screen' rel='stylesheet'>
   <link href='css/styles.css' media='screen' rel='stylesheet'>
-  <title>Supermodel.js | Model Relationships for Backbone</title>
+  <title>Supermodel.js | Minimal Model Tracking for Backbone</title>
 </head>
 <body>
   <div class="fixed-top">
@@ -38,11 +38,11 @@
           </div>
           <div class="ptl text-center">
             <a class="btn" href="./supermodel.js">
-              <div class="light small quiet">Development - 0.0.3</div>
+              <div class="light small quiet">Development - 0.0.4</div>
               <span class="h3"><i class="icon-download-alt"></i>supermodel.js</span>
             </a>
             <a class="btn" href="./supermodel.min.js">
-              <div class="light small quiet">Production - 0.0.3</div>
+              <div class="light small quiet">Production - 0.0.4</div>
               <span class="h3"><i class="icon-download-alt"></i>supermodel.min.js</span>
             </a>
           </div>
@@ -73,8 +73,11 @@ comment.post() === post; // true :D</code></pre>
         <div class="fixed prl">
           <div class='width-20'>
             <ul class='nav-list no-list width-20 pts pbs'>
-              <li class="nav-list-item">
+              <li class="nav-list-item mbm">
                 <a class='strong nav-list-link' href='#source'>Source</a>
+              </li>
+              <li class="nav-list-item mbm">
+                <a class='strong nav-list-link' href='#change-log'>Change Log</a>
               </li>
               <li class="nav-list-item">
                 <a class='strong nav-list-link' href='#model'>Model</a>
@@ -88,6 +91,9 @@ comment.post() === post; // true :D</code></pre>
               <li class="nav-list-item">
                 <a class='nav-list-link' href='#model.reset'>Model.reset</a>
               </li>
+              <li class="nav-list-item">
+                <a class='nav-list-link' href='#model.parent'>Model.parent</a>
+              </li>
               <li class="nav-list-item mbm">
                 <a class='nav-list-link' href='#parse'>parse</a>
               </li>
@@ -96,6 +102,9 @@ comment.post() === post; // true :D</code></pre>
               </li>
               <li class="nav-list-item">
                 <a class='nav-list-link' href='#has'>has</a>
+              </li>
+              <li class="nav-list-item">
+                <a class='nav-list-link' href='#owner'>owner</a>
               </li>
               <li class="nav-list-item">
                 <a class='nav-list-link' href='#one'>one</a>
@@ -113,6 +122,13 @@ comment.post() === post; // true :D</code></pre>
           <section>
             <a class='h1' name='source'>Source</a>
             <p>The source for Supermodel is <a href="http://github.com/pathable/supermodel">hosted on github</a>.  Please give it a read before trying anything serious as it will greatly improve the utility you gain from the library.  <a href="./docs/supermodel.html">The annotated source</a> is also provided for easier reading. Supermodel is available for use under the <a href="https://github.com/pathable/supermodel/blob/master/LICENSE">MIT software license</a>.</p>
+          </section>
+          <section>
+            <a class='h1' name='change-log'>Change Log</a>
+            <h3>0.0.4</h3>
+            <ul>
+              <li><p><b>Model.parent</b> - Supermodel will no longer use <code>__super__</code> to infer model relationships.  Instead, they should be declared with <a href='#model.parent'><code>Model.parent</code></a></p></li>
+            </ul>
           </section>
           <section>
             <a class='h1' name='model'>Model</a>
@@ -188,6 +204,13 @@ User.reset();
 User.all().get(3); // null</code></pre>
           </section>
           <section>
+            <a class='h3' name='model.parent'>Model.parent</a>
+            <p>The parent constructor, used to indicate that Supermodel should track inherited instances.  Constructors are otherwise treated as stand alone models, regardless of prototype chain.</p>
+            <pre class='colorize language-javascript'><code>var Admin = User.extend({
+  parent: User
+});</code></pre>
+          </section>
+          <section>
             <a class='h3' name='parse'>Model.prototoype.parse</a>
             <p>In order to prevent conflicts between associations and their corresponding attributes, nested data is used and removed with <code>model.parse</code>.  Parsing is also done on new models during initialization.</p>
             <p>Nested data can be provided through the <code>source</code> property in a model's attributes.</p>
@@ -236,6 +259,19 @@ user.memberships().contains(membership); // true \o/</code></pre>
           <section>
             <a class='h3' name='has'>has</a>
             <p>Associations are specified using <code>Model.has()</code>.  This prevents naming collisions and provides a convenient extension point outside of <code>Model</code> itself.</p>
+          </section>
+          <section>
+            <a class='h3' name='owner'>owner</a>
+            <p>A reference to the model that owns an associated collection.  This is useful when specifying a collection url that's relative to its owner.</p>
+            <pre class='colorize language-javascript'><code>Post.has().many('comments', {
+  inverse: 'post',
+  collection: Comments.extend({
+    url: function() {
+      return '/posts/' + this.owner.id + '/comments';
+    }
+  })
+});
+</code></pre>
           </section>
           <section>
             <a class='h3' name='one'>one</a>
@@ -351,7 +387,10 @@ group.users().contains(user); // true</code></pre>
       </div>
     </div>
   </div>
-  <script src="./js/jquery.min.js"></script>
+  <script src="./test/vendor/jquery.js"></script>
+  <script src="./test/vendor/underscore.js"></script>
+  <script src="./test/vendor/backbone.js"></script>
+  <script src="./supermodel.js"></script>
   <script src="./js/highlight.pack.js"></script>
   <script>
 

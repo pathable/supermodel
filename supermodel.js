@@ -7,7 +7,7 @@
   var Supermodel = root.Supermodel = {};
 
   // Current version.
-  Supermodel.VERSION = '0.0.3';
+  Supermodel.VERSION = '0.0.4';
 
   // Local reference to Collection.
   var Collection = Backbone.Collection;
@@ -20,20 +20,20 @@
   // Track associations between models.  Associated attributes are used and
   // then removed during `parse`.
   var Association = function(model, options) {
-    required(options, 'name');
-    _.extend(this, _.pick(options, 'name', 'where'));
-    this.source = options.source || this.name;
-    this.store = options.store || '_' + this.name;
+    this.required(options, 'name');
+    _.extend(this, _.pick(options, 'name', 'where', 'source', 'store'));
+    _.defaults(this, {
+      source: this.name,
+      store: '_' + this.name
+    });
 
     // Store a reference to this association by name after ensuring it's
     // unique.
     var ctor = model;
-    while (ctor !== Model) {
-      if (ctor.associations()[this.name]) {
-        throw new Error('Association already exists: ' + this.name);
-      }
-      ctor = ctor.__super__.constructor;
-    }
+    do {
+      if (!ctor.associations()[this.name]) continue;
+      throw new Error('Association already exists: ' + this.name);
+    } while (ctor = ctor.parent);
     model.associations()[this.name] = this;
 
     // Listen for relevant events.
@@ -60,6 +60,24 @@
     dissociate: function(model, other) {
       if (!this.inverse) return;
       model.trigger('dissociate:' + this.inverse, model, other);
+    },
+
+    // Throw if the specified options are not provided.
+    required: function(options) {
+      var option;
+      for (var i = 1; i < arguments.length; i++) {
+        if (options[option = arguments[i]]) continue;
+        throw new Error('Option required: ' + option);
+      }
+    },
+
+    // Wrap a function in order to capture it's context, prepend it to the
+    // arguments and call it with the current context.
+    andThis: function(func) {
+      var context = this;
+      return function() {
+        return func.apply(context, [this].concat(_.toArray(arguments)));
+      };
     }
 
   });
@@ -70,10 +88,12 @@
   var One = Association.extend({
 
     constructor: function(model, options) {
-      required(options, 'inverse', 'model');
+      this.required(options, 'inverse', 'model');
       Association.apply(this, arguments);
       _.extend(this, _.pick(options, 'inverse', 'model'));
-      this.id = options.id || this.name + '_id';
+      _.defaults(this, {
+        id: this.name + '_id'
+      });
       model.all()
         .on('associate:' + this.name, this.replace, this)
         .on('dissociate:' + this.name, this.remove, this);
@@ -166,9 +186,9 @@
   var ManyToOne = Association.extend({
 
     constructor: function(model, options) {
-      required(options, 'inverse', 'collection');
+      this.required(options, 'inverse', 'collection');
       Association.apply(this, arguments);
-      _.extend(this, _.pick(options, 'collection', 'comparator', 'inverse'));
+      _.extend(this, _.pick(options, 'collection', 'inverse'));
       model.all()
         .on('associate:' + this.name, this._associate, this)
         .on('dissociate:' + this.name, this._dissociate, this);
@@ -177,29 +197,26 @@
     // When a model is created, instantiate the associated collection and
     // assign it using `store`.
     create: function(model) {
-      model[this.name] = _.bind(this.get, this, model);
+      if (!model[this.name]) model[this.name] = _.bind(this.get, this, model);
+    },
 
-      // Bail if the collection already exists.
+    // Return the associated collection.
+    get: function(model) {
       var collection = model[this.store];
-      if (collection) return;
+      if (collection) return collection;
 
       // Create the collection for storing the associated models.  Listen for
       // "add", "remove", and "reset" events and act accordingly.
-      collection = model[this.store] = new this.collection([], {
-        comparator: this.comparator
-      })
+      collection = model[this.store] = new this.collection()
       .on('add', this.add, this)
       .on('remove', this.remove, this)
       .on('reset', this.reset, this);
 
       // We'll need to know what model "owns" this collection in order to
       // handle events that it triggers.
-      collection[this.inverse] = collection.owner = model;
-    },
+      collection.owner = model;
 
-    // Return the associated collection.
-    get: function(model) {
-      return model[this.store];
+      return collection;
     },
 
     // Use the `source` property to reset the collection with the given models
@@ -208,7 +225,7 @@
       var attrs = resp[this.source];
       if (!attrs) return;
       delete resp[this.source];
-      var collection = model[this.store];
+      var collection = this.get(model);
       attrs = collection.parse(attrs);
 
       // If `where` is not specified, reset the collection and bail.
@@ -260,9 +277,9 @@
 
     // Associated models should be added to the collection.
     _associate: function(model, other) {
-      if (!model || !other || !model[this.store]) return;
+      if (!model || !other) return;
       if (this.where && !this.where(other)) return;
-      model[this.store].add(other);
+      this.get(model).add(other);
     },
 
     // Dissociated models should be removed from the collection.
@@ -279,11 +296,11 @@
   var ManyToMany = Association.extend({
 
     constructor: function(model, options) {
-      required(options, 'collection', 'through', 'source');
+      this.required(options, 'collection', 'through', 'source');
       Association.apply(this, arguments);
       _.extend(this, _.pick(options, 'collection', 'through'));
-      this._associate = andThis(this._associate, this);
-      this._dissociate = andThis(this._dissociate, this);
+      this._associate = this.andThis(this._associate);
+      this._dissociate = this.andThis(this._dissociate);
     },
 
     // When a new model is created, assign the getter.
@@ -294,31 +311,30 @@
     // Lazy load the associated collection to avoid initialization costs.
     get: function(model) {
       var collection = model[this.store];
+      if (collection) return collection;
 
-      if (!collection) {
-        collection = new this.collection([], {comparator: this.comparator});
+      // Create a new collection.
+      collection = new this.collection();
 
-        // We'll need to know what model "owns" this collection in order to
-        // handle events that it triggers.
-        collection.owner = model;
-        model[this.store] = collection;
+      // We'll need to know what model "owns" this collection in order to
+      // handle events that it triggers.
+      collection.owner = model;
+      model[this.store] = collection;
 
-        // Initialize listeners and models.
-        this.reset(model[this.through]()
-          .on('add', this.add, this)
-          .on('remove', this.remove, this)
-          .on('reset', this.reset, this)
-          .on('associate:' + this.source, this._associate)
-          .on('dissociate:' + this.source, this._dissociate));
-      }
+      // Initialize listeners and models.
+      this.reset(model[this.through]()
+        .on('add', this.add, this)
+        .on('remove', this.remove, this)
+        .on('reset', this.reset, this)
+        .on('associate:' + this.source, this._associate)
+        .on('dissociate:' + this.source, this._dissociate));
 
       return collection;
     },
 
     // Add models to the collection when added to the through collection.
     add: function(model, through) {
-      if (!model || !through) return;
-      if (!(model = model[this.source]())) return;
+      if (!model || !through || !(model = model[this.source]())) return;
       if (this.where && !this.where(model)) return;
       through.owner[this.name]().add(model);
     },
@@ -326,8 +342,7 @@
     // Remove models from the collection when removed from the through
     // collection after checking for other instances.
     remove: function(model, through) {
-      if (!model || !through) return;
-      if (!(model = model[this.source]())) return;
+      if (!model || !through || !(model = model[this.source]())) return;
       var exists = through.any(function(o) {
         return o[this.source]() === model;
       }, this);
@@ -397,7 +412,8 @@
     //   inverse association.
     // * **through** - (*required for many-to-many associations*) The name of the
     //   through association.
-    // * **source** - The attribute where nested data is stored.
+    // * **source** - (*required for many-to-many associations*) The attribute
+    //   where nested data is stored.
     // * **store** - The property to store the association in.
     //   Defaults to '_' + `name`.
     many: function(name, options) {
@@ -421,10 +437,7 @@
 
       // Add the model to `all` for each constructor in its prototype chain.
       var ctor = this.constructor;
-      while (ctor !== Model) {
-        ctor.all().add(this);
-        ctor = ctor.__super__.constructor;
-      }
+      do { ctor.all().add(this); } while (ctor = ctor.parent);
 
       // Trigger 'initialize' for listening associations.
       this.trigger('initialize', this);
@@ -471,12 +484,10 @@
 
       // Throw if a model already exists with the same id in a superclass.
       var ctor = this;
-      while (ctor !== Model) {
-        if (ctor.all().get(id)) {
-          throw new Error('Model with id "' + id + '" already exists.');
-        }
-        ctor = ctor.__super__.constructor;
-      }
+      do {
+        if (!ctor.all().get(id)) continue;
+        throw new Error('Model with id "' + id + '" already exists.');
+      } while (ctor = ctor.parent);
 
       return new this(attrs, options);
     },
@@ -496,32 +507,14 @@
       return this._associations || (this._associations = {});
     },
 
-    // Models are globally tracked via the `all` property on the constructor.
-    // Associations are tracked via the `associations` property.
+    // Models and associations are tracked via `all` and `associations`,
+    // respectively.  `reset` removes all model references to allow garbage
+    // collection.
     reset: function() {
       this._all = new Collection();
       this._associations = {};
     }
 
   });
-
-  // Capture a functions context (this), prepend it to the arguments, and call
-  // the function with the provided context.
-  var andThis = function(func, context) {
-    return function() {
-      var args = [this].concat(_.toArray(arguments));
-      return func.apply(context, args);
-    };
-  };
-
-  // Throw if the specified options are not provided.
-  var required = function(options) {
-    for (var i = 1; i < arguments.length; i++) {
-      var option = arguments[i];
-      if (!options[option]) {
-        throw new Error('Option required: ' + option);
-      }
-    }
-  };
 
 }).call(this, Backbone);
