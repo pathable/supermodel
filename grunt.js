@@ -13,12 +13,6 @@ module.exports = function(grunt) {
     min: {
       'supermodel.min.js': 'supermodel.js'
     },
-    watch: {
-      default: {
-        files: ['supermodel.js', 'test/index.html', 'test/**/*.js'],
-        tasks: 'default'
-      }
-    },
     jshint: {
       options: {
         eqnull: true,
