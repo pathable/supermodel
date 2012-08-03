@@ -186,6 +186,11 @@
     ok(membership.user() === user);
   });
 
+  test('Parsing a model with associations handles null response without puking and dying', function() {
+    var user = User.create({id: 1});
+    ok(user.parse(null) === null);
+  });
+
   test('Handle ids that are strings.', function() {
     var user = User.create({id: 3});
     var membership = Membership.create({id: 2, user_id: '3'});
