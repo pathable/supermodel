@@ -70,7 +70,7 @@ attribute.</p>             </td>             <td class="code">               <di
       <span class="k">if</span> <span class="p">(</span><span class="nx">id</span> <span class="o">!=</span> <span class="kc">null</span><span class="p">)</span> <span class="k">this</span><span class="p">.</span><span class="nx">replace</span><span class="p">(</span><span class="nx">model</span><span class="p">,</span> <span class="nx">id</span><span class="p">);</span>
     <span class="p">},</span></pre></div>             </td>           </tr>                               <tr id="section-18">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-18">&#182;</a>               </div>               <p>If <code>source</code> is provided, use it to initialize the association after
 removing it from the response object.</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="nx">parse</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">model</span><span class="p">,</span> <span class="nx">resp</span><span class="p">)</span> <span class="p">{</span>
-      <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">_</span><span class="p">.</span><span class="nx">has</span><span class="p">(</span><span class="nx">resp</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">source</span><span class="p">))</span> <span class="k">return</span><span class="p">;</span>
+      <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">resp</span> <span class="o">||</span> <span class="o">!</span><span class="nx">_</span><span class="p">.</span><span class="nx">has</span><span class="p">(</span><span class="nx">resp</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">source</span><span class="p">))</span> <span class="k">return</span><span class="p">;</span>
       <span class="kd">var</span> <span class="nx">attrs</span> <span class="o">=</span> <span class="nx">resp</span><span class="p">[</span><span class="k">this</span><span class="p">.</span><span class="nx">source</span><span class="p">];</span>
       <span class="k">delete</span> <span class="nx">resp</span><span class="p">[</span><span class="k">this</span><span class="p">.</span><span class="nx">source</span><span class="p">];</span>
       <span class="k">this</span><span class="p">.</span><span class="nx">replace</span><span class="p">(</span><span class="nx">model</span><span class="p">,</span> <span class="nx">attrs</span><span class="p">);</span>
@@ -130,6 +130,7 @@ handle events that it triggers.</p>             </td>             <td class="cod
       <span class="k">return</span> <span class="nx">collection</span><span class="p">;</span>
     <span class="p">},</span></pre></div>             </td>           </tr>                               <tr id="section-32">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-32">&#182;</a>               </div>               <p>Use the <code>source</code> property to reset the collection with the given models
 after removing it from the response object.</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="nx">parse</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">model</span><span class="p">,</span> <span class="nx">resp</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">resp</span><span class="p">)</span> <span class="k">return</span><span class="p">;</span>
       <span class="kd">var</span> <span class="nx">attrs</span> <span class="o">=</span> <span class="nx">resp</span><span class="p">[</span><span class="k">this</span><span class="p">.</span><span class="nx">source</span><span class="p">];</span>
       <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">attrs</span><span class="p">)</span> <span class="k">return</span><span class="p">;</span>
       <span class="k">delete</span> <span class="nx">resp</span><span class="p">[</span><span class="k">this</span><span class="p">.</span><span class="nx">source</span><span class="p">];</span>
@@ -258,8 +259,9 @@ Defaults to '_' + <code>name</code>.</li>
 inverse association.</li>
 <li><strong>through</strong> - (<em>required for many-to-many associations</em>) The name of the
 through association.</li>
-<li><strong>source</strong> - (<em>required for many-to-many associations</em>) The attribute
-where nested data is stored.</li>
+<li><strong>source</strong> - (<em>required for many-to-many associations</em>) For many-to-one
+associations, the attribute where nested data is stored. For many-to-many
+associations, the name of the indirect association.</li>
 <li><strong>store</strong> - The property to store the association in.
 Defaults to '_' + <code>name</code>.</li>
 </ul>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="nx">many</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">name</span><span class="p">,</span> <span class="nx">options</span><span class="p">)</span> <span class="p">{</span>
