@@ -608,7 +608,7 @@
 
   test('Add on change.', function() {
     var group = Group.create({id: 1});
-    var hidden = Group.create({id: 4, hidden: true});
+    Group.create({id: 4, hidden: true});
     var user = User.create({id: 2, memberships: [{id: 3}]});
     var membership = user.memberships().at(0);
 

@@ -1,7 +1,6 @@
 (function() {
 
   var Model = Supermodel.Model;
-  var Collection = Backbone.Collection;
 
   var User = Model.extend();
   var Admin = User.extend({}, {parent: User});
@@ -22,9 +21,9 @@
   });
 
   test('Set values on existing models', function() {
-    var a = User.create({id: 1});
-    var b = User.create({id: 1, test: 'test'});
-    strictEqual(a.get('test'), 'test');
+    var user = User.create({id: 1});
+    User.create({id: 1, test: 'test'});
+    strictEqual(user.get('test'), 'test');
   });
 
   test('Remember instance after id is set', function() {
@@ -86,7 +85,7 @@
     var admin;
     var user = User.create({id: 1});
     raises(function() {
-      var admin = Admin.create({id: 1});
+      admin = Admin.create({id: 1});
     }, function(e) {
       return e.message === 'Model with id "1" already exists.';
     });
