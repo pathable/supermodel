@@ -12,9 +12,6 @@
   // Local reference to Collection.
   var Collection = Backbone.Collection;
 
-  // Use Backbone's `extend` for sugar.
-  var extend = Backbone.Model.extend;
-
   // # Association
   //
   // Track associations between models.  Associated attributes are used and
@@ -43,8 +40,6 @@
     if (this.destroy) model.all().on('destroy', this.destroy, this);
     if (this.create) model.all().on('add', this.create, this);
   };
-
-  Association.extend = extend;
 
   _.extend(Association.prototype, {
 
@@ -85,19 +80,19 @@
   // ## One
   //
   // One side of a one-to-one or one-to-many association.
-  var One = Association.extend({
+  var One = function(model, options) {
+    this.required(options, 'inverse', 'model');
+    Association.apply(this, arguments);
+    _.extend(this, _.pick(options, 'inverse', 'model'));
+    _.defaults(this, {
+      id: this.name + '_id'
+    });
+    model.all()
+      .on('associate:' + this.name, this.replace, this)
+      .on('dissociate:' + this.name, this.remove, this);
+  };
 
-    constructor: function(model, options) {
-      this.required(options, 'inverse', 'model');
-      Association.apply(this, arguments);
-      _.extend(this, _.pick(options, 'inverse', 'model'));
-      _.defaults(this, {
-        id: this.name + '_id'
-      });
-      model.all()
-        .on('associate:' + this.name, this.replace, this)
-        .on('dissociate:' + this.name, this.remove, this);
-    },
+  _.extend(One.prototype, Association.prototype, {
 
     // Assign the getter/setter when a model is created.
     create: function(model) {
@@ -183,16 +178,16 @@
 
   // # ManyToOne
   // The many side of a one-to-many association.
-  var ManyToOne = Association.extend({
+  var ManyToOne = function(model, options) {
+    this.required(options, 'inverse', 'collection');
+    Association.apply(this, arguments);
+    _.extend(this, _.pick(options, 'collection', 'inverse'));
+    model.all()
+      .on('associate:' + this.name, this._associate, this)
+      .on('dissociate:' + this.name, this._dissociate, this);
+  };
 
-    constructor: function(model, options) {
-      this.required(options, 'inverse', 'collection');
-      Association.apply(this, arguments);
-      _.extend(this, _.pick(options, 'collection', 'inverse'));
-      model.all()
-        .on('associate:' + this.name, this._associate, this)
-        .on('dissociate:' + this.name, this._dissociate, this);
-    },
+  _.extend(ManyToOne.prototype, Association.prototype, {
 
     // When a model is created, instantiate the associated collection and
     // assign it using `store`.
@@ -294,15 +289,15 @@
   // # ManyToMany
   //
   // One side of a many-to-many association.
-  var ManyToMany = Association.extend({
+  var ManyToMany = function(model, options) {
+    this.required(options, 'collection', 'through', 'source');
+    Association.apply(this, arguments);
+    _.extend(this, _.pick(options, 'collection', 'through'));
+    this._associate = this.andThis(this._associate);
+    this._dissociate = this.andThis(this._dissociate);
+  };
 
-    constructor: function(model, options) {
-      this.required(options, 'collection', 'through', 'source');
-      Association.apply(this, arguments);
-      _.extend(this, _.pick(options, 'collection', 'through'));
-      this._associate = this.andThis(this._associate);
-      this._dissociate = this.andThis(this._dissociate);
-    },
+  _.extend(ManyToMany.prototype, Association.prototype, {
 
     // When a new model is created, assign the getter.
     create: function(model) {
