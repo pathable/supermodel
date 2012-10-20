@@ -1,16 +1,25 @@
-(function(Backbone){
+(function() {
 
-  // The global object.
-  var root = this;
-
-  // Expose Supermodel to the global object.
-  var Supermodel = root.Supermodel = {};
+  // Use exports if on the server.
+  var Supermodel;
+  if (typeof exports === 'undefined') {
+    Supermodel = this.Supermodel = {};
+  } else {
+    Supermodel = exports;
+  }
 
   // Current version.
   Supermodel.VERSION = '0.0.4';
 
-  // Local reference to Collection.
-  var Collection = Backbone.Collection;
+  // Require Underscore, if we're on the server, and it's not already present.
+  var _ = this._;
+  if (!_ && (typeof require !== 'undefined')) _ = require('underscore');
+
+  // Require Backbone, if we're on the server, and it's not already present.
+  var Backbone = this.Backbone;
+  if (!Backbone && (typeof require !== 'undefined')) {
+    Backbone = require('backbone');
+  }
 
   // # Association
   //
@@ -496,7 +505,7 @@
 
     // Return a collection of all models for a particular constructor.
     all: function() {
-      return this._all || (this._all = new Collection());
+      return this._all || (this._all = new Backbone.Collection());
     },
 
     // Return a hash of all associations for a particular constructor.
@@ -508,10 +517,10 @@
     // respectively.  `reset` removes all model references to allow garbage
     // collection.
     reset: function() {
-      this._all = new Collection();
+      this._all = new Backbone.Collection();
       this._associations = {};
     }
 
   });
 
-}).call(this, Backbone);
+}).call(this);

@@ -27,6 +27,8 @@ module.exports = function(grunt) {
           // Dependencies
           _: true,
           jQuery: true,
+          exports: true,
+          require: true,
           Backbone: true,
           Supermodel: true
         }
