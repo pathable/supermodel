@@ -408,8 +408,9 @@
     //   inverse association.
     // * **through** - (*required for many-to-many associations*) The name of the
     //   through association.
-    // * **source** - (*required for many-to-many associations*) The attribute
-    //   where nested data is stored.
+    // * **source** - (*required for many-to-many associations*) For many-to-one
+    //   associations, the attribute where nested data is stored. For many-to-many
+    //   associations, the name of the indirect association.
     // * **store** - The property to store the association in.
     //   Defaults to '_' + `name`.
     many: function(name, options) {
