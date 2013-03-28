@@ -36,6 +36,10 @@ module.exports = function(grunt) {
     }
   });
 
+   // Load the plugins that provide tasks.
+  grunt.loadNpmTasks('grunt-contrib-jshint');
+  grunt.loadNpmTasks('grunt-contrib-qunit');
+
   // Default tasks.
   grunt.registerTask('default', ['jshint', 'qunit']);
 
