@@ -92,7 +92,7 @@
   var One = function(model, options) {
     this.required(options, 'inverse', 'model');
     Association.apply(this, arguments);
-    _.extend(this, _.pick(options, 'inverse', 'model'));
+    _.extend(this, _.pick(options, 'inverse', 'model', 'id'));
     _.defaults(this, {
       id: this.name + '_id'
     });
