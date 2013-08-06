@@ -475,7 +475,7 @@
       var id = attrs && attrs[this.prototype.idAttribute];
 
       // If `attrs` belongs to an existing model, return it.
-      if (cid && (model = all.getByCid(cid)) && model.attributes === attrs) {
+      if (cid && (model = all.get(cid)) && model.attributes === attrs) {
         return model;
       }
 
