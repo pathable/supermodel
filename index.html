@@ -212,6 +212,14 @@ User.all().get(3); // null</code></pre>
   parent: User
 });</code></pre>
           </section>
+
+            <section>
+            <a class='h3' name='model.source'>Model.source</a>
+            <p>The source of the model itself. Use if your backend serves the base model in an envelope.</p>
+            <pre class='colorize language-javascript'><code>var Admin = User.extend({
+  source: 'User'
+});</code></pre>
+          </section>
           <section>
             <a class='h3' name='parse'>Model.prototoype.parse</a>
             <p>In order to prevent conflicts between associations and their corresponding attributes, nested data is used and removed with <code>model.parse</code>.  Parsing is also done on new models during initialization.</p>
