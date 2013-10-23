@@ -99,6 +99,16 @@
     ok(user.parse(resp) === resp);
   });
 
+  test('Parse returns the response with source.', function() {
+    var source = 'user';
+    var UserWithSource = User.extend({source : source});
+
+    var user = UserWithSource.create({id: 1});
+    var resp = {};
+    resp[source] = {'id': 'source_id'};
+    ok(user.parse(resp) === resp[source]);
+  });
+
   test('Model.create doesn\'t throw.', 0, function() {
     Model.create({id: 1});
   });
