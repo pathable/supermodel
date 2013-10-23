@@ -458,9 +458,11 @@
 
     // Associations are initialized/updated during `parse`.  They listen for
     // the `'parse'` event and remove the appropriate properties after parsing.
+    // 
+    // The remaining properties are returned from `source`, if provided.
     parse: function(resp) {
       this.trigger('parse', this, resp);
-      return resp;
+      return (this.source && resp[this.source]) ? resp[this.source] : resp;
     }
 
   }, {
