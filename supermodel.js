@@ -474,7 +474,8 @@
       var model;
       var all = this.all();
       var cid = attrs && attrs[this.prototype.cidAttribute];
-      var id = attrs && attrs[this.prototype.idAttribute];
+      var id = (attrs && attrs[this.prototype.idAttribute]) 
+            || (attrs[this.prototype.source] && attrs[this.prototype.source][this.prototype.idAttribute]);
 
       // If `attrs` belongs to an existing model, return it.
       if (cid && (model = all.getByCid(cid)) && model.attributes === attrs) {
@@ -483,7 +484,7 @@
 
       // If a model already exists for `id`, return it.
       if (id && (model = all.get(id))) {
-        model.parse(attrs);
+        attrs = model.parse(attrs);
         model.set(attrs);
         return model;
       }
