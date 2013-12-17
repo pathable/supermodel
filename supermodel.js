@@ -471,18 +471,10 @@
     create: function(attrs, options) {
       var model;
       var all = this.all();
-      var cid = attrs && attrs[this.prototype.cidAttribute];
       var id = attrs && attrs[this.prototype.idAttribute];
 
-      // If `attrs` belongs to an existing model, return it.
-      if (cid && (model = all.getByCid(cid)) && model.attributes === attrs) {
-        return model;
-      }
-
-      // If a model already exists for `id`, return it.
-      if (id && (model = all.get(id))) {
-        model.parse(attrs);
-        model.set(attrs);
+      //find an existing model with matching cid or id
+      if(model = this.find(attrs, true) ){
         return model;
       }
 
@@ -496,6 +488,31 @@
       } while (ctor = ctor.parent);
 
       return new this(attrs, options);
+    },
+
+    // ## find
+    // Attempt to find an existing model matching the provided attrs
+    find: function(attrs, merge){
+      var model;
+      var all = this.all();
+      var cid = attrs && attrs[this.prototype.cidAttribute];
+      var id = attrs && attrs[this.prototype.idAttribute];
+
+      // If a model already exists for `id`, return it.
+      if (cid && (model = all.getByCid(cid))) {
+        return model;
+      }
+      // If `attrs` belongs to an existing model, return it.
+      if (id && (model = all.get(id))) {
+        if(model.attrs!==attrs && merge){
+          attrs = model.parse(attrs);
+          model.set(attrs);
+        }
+        return model;
+      }
+
+      return false;
+      
     },
 
     // Create associations for a model.
