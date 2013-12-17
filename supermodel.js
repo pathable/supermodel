@@ -530,6 +530,6 @@
   });
   
 
-  return SuperModel;
+  return Supermodel;
 
 }));
