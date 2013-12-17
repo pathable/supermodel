@@ -1,25 +1,31 @@
-(function() {
+(function (root, factory) {
 
-  // Use exports if on the server.
-  var Supermodel;
-  if (typeof exports === 'undefined') {
-    Supermodel = this.Supermodel = {};
+  'use strict';
+
+  //commonjs
+  if (typeof exports === 'object') {
+
+    var backbone = require('backbone');
+    var underscore = require('underscore');
+    module.exports = factory(backbone, underscore);
+
+  //amd
+  } else if (typeof define === 'function' && define.amd) {
+    define(['backbone', 'underscore'], factory);
+
+  //global scope
   } else {
-    Supermodel = exports;
+    root.Supermodel = factory(root.Backbone, root._);
   }
+
+}(this, function (Backbone, _) {
+
+  'use strict'
+
+  var Supermodel = {};
 
   // Current version.
   Supermodel.VERSION = '0.0.4';
-
-  // Require Underscore, if we're on the server, and it's not already present.
-  var _ = this._;
-  if (!_ && (typeof require !== 'undefined')) _ = require('underscore');
-
-  // Require Backbone, if we're on the server, and it's not already present.
-  var Backbone = this.Backbone;
-  if (!Backbone && (typeof require !== 'undefined')) {
-    Backbone = require('backbone');
-  }
 
   // # Association
   //
@@ -522,5 +528,8 @@
     }
 
   });
+  
 
-}).call(this);
+  return SuperModel;
+
+}));
