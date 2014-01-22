@@ -8,9 +8,25 @@
   },
   "devDependencies": {
     "docco": "~0.6.2",
-    "uglify-js": "~2.4.11"
+    "uglify-js": "~2.4.11",
+    "tape": "~2.3.2",
+    "browserify": "~3.23.1"
+  },
+  "testling": {
+    "files": "test/*.js",
+    "browsers": [
+      "ie/9..latest",
+      "chrome/latest",
+      "firefox/latest",
+      "safari/latest",
+      "opera/latest",
+      "iphone/6..latest",
+      "ipad/6..latest"
+    ]
   },
   "scripts": {
+    "test": "tape test/*.js",
+    "bundle": "browserify test/*.js -o test.js",
     "docs": "docco supermodel.js",
     "min": "uglifyjs supermodel.js > supermodel.min.js",
     "release": "npm run docs && npm run min"
