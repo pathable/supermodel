@@ -1,25 +1,28 @@
 (function() {
 
-  // Use exports if on the server.
-  var Supermodel;
-  if (typeof exports === 'undefined') {
-    Supermodel = this.Supermodel = {};
-  } else {
-    Supermodel = exports;
-  }
+  // Global object reference.
+  var root = this;
+
+  // Exports
+  var Supermodel = typeof exports !== 'undefined'
+    ? exports
+    : root.Supermodel = {};
+  ;
+
+  // Underscore
+  var _ = typeof exports !== 'undefined'
+    ? require('underscore')
+    : root._
+  ;
+
+  // Backbone
+  var Backbone = typeof exports !== 'undefined'
+    ? require('backbone')
+    : root.Backbone
+  ;
 
   // Current version.
   Supermodel.VERSION = '0.0.4';
-
-  // Require Underscore, if we're on the server, and it's not already present.
-  var _ = this._;
-  if (!_ && (typeof require !== 'undefined')) _ = require('underscore');
-
-  // Require Backbone, if we're on the server, and it's not already present.
-  var Backbone = this.Backbone;
-  if (!Backbone && (typeof require !== 'undefined')) {
-    Backbone = require('backbone');
-  }
 
   // # Association
   //
