@@ -7,9 +7,12 @@
     "backbone": ">=0.9.2"
   },
   "devDependencies": {
-    "grunt": "0.4.0",
-    "grunt-cli": "0.1.6",
-    "grunt-contrib-jshint": "~0.1.1",
-    "grunt-contrib-qunit": "~0.1.1"
+    "docco": "~0.6.2",
+    "uglify-js": "~2.4.11"
+  },
+  "scripts": {
+    "docs": "docco supermodel.js",
+    "min": "uglifyjs supermodel.js > supermodel.min.js",
+    "release": "npm run docs && npm run min"
   }
 }
