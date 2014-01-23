@@ -1,25 +1,21 @@
-(function() {
+(function (root, callback) {
 
-  // Global object reference.
-  var root = this;
+  // AMD
+  if (typeof define !== 'undefined' && define.amd) {
+    define(['exports', 'backbone', 'underscore'], callback);
+  }
 
-  // Exports
-  var Supermodel = typeof exports !== 'undefined'
-    ? exports
-    : root.Supermodel = {};
-  ;
+  // CommonJS
+  else if (typeof exports !== 'undefined') {
+    callback(exports, require('backbone'), require('underscore'));
+  }
 
-  // Underscore
-  var _ = typeof exports !== 'undefined'
-    ? require('underscore')
-    : root._
-  ;
+  // Globals
+  else {
+    callback({}, root.Backbone, root._);
+  }
 
-  // Backbone
-  var Backbone = typeof exports !== 'undefined'
-    ? require('backbone')
-    : root.Backbone
-  ;
+}(this, function (Supermodel, Backbone, _) {
 
   // Current version.
   Supermodel.VERSION = '0.0.4';
@@ -528,4 +524,4 @@
 
   });
 
-}).call(this);
+}));
