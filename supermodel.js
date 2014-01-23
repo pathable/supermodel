@@ -486,6 +486,9 @@
       if (id && (model = all.get(id))) {
         model.parse(attrs);
         model.set(attrs);
+        if (!model.collection && options && options.collection) {
+          model.collection = options.collection;
+        }
         return model;
       }
 
