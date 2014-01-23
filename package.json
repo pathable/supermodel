@@ -10,7 +10,8 @@
     "docco": "~0.6.2",
     "uglify-js": "~2.4.11",
     "tape": "~2.3.2",
-    "browserify": "~3.23.1"
+    "browserify": "~3.23.1",
+    "faucet": "0.0.0"
   },
   "testling": {
     "files": "test/*.js",
@@ -25,7 +26,7 @@
     ]
   },
   "scripts": {
-    "test": "tape test/*.js",
+    "test": "faucet",
     "bundle": "browserify test/*.js -o test.js",
     "docs": "docco supermodel.js",
     "min": "uglifyjs supermodel.js > supermodel.min.js",
