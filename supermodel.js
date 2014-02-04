@@ -485,6 +485,10 @@
         throw new Error('Model with id "' + id + '" already exists.');
       }
 
+      // Ensure attributes are parsed.
+      if (!options) options = {};
+      options.parse = true;
+
       return new this(attrs, options);
     },
 
@@ -506,7 +510,7 @@
 
     // Return a collection of all models for a particular constructor.
     all: function() {
-      return this._all || (this._all = new Backbone.Collection());
+      return this._all || (this._all = new Backbone.Collection);
     },
 
     // Return a hash of all associations for a particular constructor.
@@ -518,7 +522,7 @@
     // respectively.  `reset` removes all model references to allow garbage
     // collection.
     reset: function() {
-      this._all = new Backbone.Collection();
+      this._all = null;
       this._associations = {};
     }
 
