@@ -40,6 +40,7 @@ var test = function(name, options, callback) {
   }
   require('tape')(name, options, function(t) {
 
+    Model.reset();
     User.reset();
     Admin.reset();
     Settings.reset();
@@ -712,3 +713,35 @@ test('Remove on destroy.', function(t) {
   t.end();
 });
 
+test('Nested Parse.', function(t) {
+  var Parent = Supermodel.Model.extend({});
+  var Child = Supermodel.Model.extend({
+    parse: function(res) {
+      t.same(res, {
+        id: 2,
+        stuff: 'nonsense'
+      });
+    }
+  });
+
+  Parent.has().one('child', {
+    model: Child,
+    inverse: 'parent'
+  });
+
+  Child.has().one('parent', {
+    model: Parent,
+    inverse: 'child'
+  });
+
+  Parent.create({
+    id: 1,
+    foo: 'bar',
+    child: {
+      id: 2,
+      stuff: 'nonsense'
+    }
+  });
+
+  t.end();
+});
