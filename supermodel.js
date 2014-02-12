@@ -12,7 +12,7 @@
 
   // Globals
   else {
-    callback({}, root.Backbone, root._);
+    callback(root.Supermodel = {}, root.Backbone, root._);
   }
 
 }(this, function (Supermodel, Backbone, _) {
