@@ -208,7 +208,7 @@ User.all().get(3); // null</code></pre>
           <section>
             <a class='h3' name='model.parent'>Model.parent</a>
             <p>The parent constructor, used to indicate that Supermodel should track inherited instances.  Constructors are otherwise treated as stand alone models, regardless of prototype chain.</p>
-            <pre class='colorize language-javascript'><code>var Admin = User.extend({
+            <pre class='colorize language-javascript'><code>var Admin = User.extend({}, {
   parent: User
 });</code></pre>
           </section>
