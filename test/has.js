@@ -114,8 +114,8 @@ test('Associations are created lazily.', function(t) {
 });
 
 test('Collections handle duplicates correctly.', function(t) {
-  var users = new Users([{id: 1}]);
-  users.add({id: 1, name: 'brad'});
+  var users = new Users([{id: 1, name: 'brad'}]);
+  users.add({id: 1, name: 'parker'});
   t.is(users.at(0).get('name'), 'brad');
   t.end();
 });
