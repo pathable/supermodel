@@ -119,3 +119,12 @@ test('Model.create doesn\'t throw.', 0, function(t) {
   t.end();
 });
 
+test('#53 - Create passes through options.', function(t) {
+  var model = Model.create({id: 1});
+  model.on('change:x', function(model, value, options) {
+    t.is(options.foo, 'bar');
+  });
+  Model.create({id: 1, x: 1}, {foo: 'bar'});
+  t.end();
+});
+

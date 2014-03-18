@@ -476,7 +476,7 @@
       if (model && attrs === model.attributes) return model;
 
       // If found by id, modify and return it.
-      if (id && model) return model.set(model.parse(attrs));
+      if (id && model) return model.set(model.parse(attrs), options);
 
       // Throw if a model already exists with the same id in a superclass.
       var parent = this;
