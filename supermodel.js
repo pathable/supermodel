@@ -472,11 +472,16 @@
 
       var model = this.find(attrs);
 
+      if (!options) options = {};
+
       // If `attrs` belongs to an existing model, return it.
       if (model && attrs === model.attributes) return model;
 
       // If found by id, modify and return it.
-      if (id && model) return model.set(model.parse(attrs), options);
+      if (id && model) {
+        model.set(model.parse(attrs), _.extend(options, {silent: false}));
+        return model;
+      }
 
       // Throw if a model already exists with the same id in a superclass.
       var parent = this;
@@ -486,7 +491,6 @@
       }
 
       // Ensure attributes are parsed.
-      if (!options) options = {};
       options.parse = true;
 
       return new this(attrs, options);
