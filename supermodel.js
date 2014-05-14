@@ -189,7 +189,7 @@
   var ManyToOne = function(model, options) {
     this.required(options, 'inverse', 'collection');
     Association.apply(this, arguments);
-    _.extend(this, _.pick(options, 'collection', 'inverse'));
+    _.extend(this, _.pick(options, 'collection', 'inverse', 'id'));
     model.all()
       .on('associate:' + this.name, this._associate, this)
       .on('dissociate:' + this.name, this._dissociate, this);
