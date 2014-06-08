@@ -11,7 +11,10 @@
     "uglify-js": "~2.4.11",
     "tape": "~2.4.2",
     "browserify": "~3.23.1",
-    "faucet": "0.0.0"
+    "faucet": "0.0.0",
+    "grunt": "~0.4.5",
+    "grunt-tape": "0.0.2",
+    "grunt-contrib-watch": "~0.6.1"
   },
   "testling": {
     "files": "test/*.js",
