@@ -483,6 +483,17 @@
         return model;
       }
 
+      // If found by one of our model's other uniqueAttributes, return it. See Issue #60
+      if (this.prototype.uniqueAttributes) {
+        _.each(this.prototype.uniqueAttributes, function(value) {
+          if (_.has(attrs, value)){
+            model = all.find(function(item) { return item.get( value ) == attrs[value]; });
+            if (model) return model;
+          }
+        });
+        if (model) return model;
+      }
+
       // Throw if a model already exists with the same id in a superclass.
       var parent = this;
       while (parent = parent.parent) {
