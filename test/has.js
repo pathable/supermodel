@@ -745,3 +745,106 @@ test('Nested Parse.', function(t) {
 
   t.end();
 });
+
+test('Associate local relationships and updates remote automatically (one-to-one).', function(t) {
+  var user = User.create();
+  var settings = Settings.create();
+
+  user.settings(settings);
+
+  t.same(user.get("settings_id"), settings.cid);
+  t.same(settings.get("user_id"), user.cid);
+
+  settings.set({_id: 1});
+
+  t.same(user.get("settings_id"), settings.id);
+  t.same(settings.get("user_id"), user.cid);
+
+  user.set({id: 1});
+
+  t.same(settings.get("user_id"), user.id);
+
+  t.end();
+});
+
+test('Associate local relationships and updates remote automatically (many-to-one).', function(t) {
+  var user = User.create();
+  var membership = Membership.create();
+
+  user.memberships().add(membership);
+
+  t.same(membership.get("user_id"), user.cid);
+
+  user.set({id: 1});
+
+  t.same(membership.get("user_id"), user.id);
+
+  t.end();
+});
+
+test('Associate local relationships and updates remote automatically (many-to-many).', function(t) {
+  var group = Group.create();
+
+  var m1 = Membership.create({id: 3, group: {id: group.cid}});
+  var m2 = Membership.create({id: 4, group: {id: group.cid}});
+
+  var user = User.create({
+    memberships: [
+      {id: 3},
+      {id: 4}
+    ]
+  });
+
+  t.same(m1.get("user_id"), user.cid);
+  t.same(m1.get("group_id"), group.cid);
+
+  group.set({id: 1});
+  user.set({id: 1});
+
+  t.same(m1.get("user_id"), user.id);
+  t.same(m1.get("group_id"), group.id);
+
+  t.end();
+});
+
+test('Change relationship by its relation id (one-to-one).', function(t) {
+  var user = User.create();
+  var settings = Settings.create();
+
+  user.set({
+    settings_id: settings.cid
+  });
+
+  var otherSettings = Settings.create();
+  
+  user.set({
+    settings_id: otherSettings.cid
+  });
+
+  t.same(user.get("settings_id"), otherSettings.cid);
+  t.same(otherSettings.get("user_id"), user.cid);
+  t.ok(typeof settings.get("user_id") == 'undefined');
+
+  t.end();
+});
+
+test('Change relationship by its relation id (many-to-one).', function(t) {
+  var user = User.create();
+  var membership = Membership.create();
+
+  membership.set({
+    user_id: user.cid
+  });
+
+  var admin = User.create();
+  
+  membership.set({
+    user_id: admin.cid
+  });
+
+  t.same(membership.get("user_id"), admin.cid);
+  t.same(admin.memberships().get(membership), membership);
+  t.ok(typeof user.memberships().get(membership) == 'undefined');
+
+  t.end();
+});

@@ -130,8 +130,18 @@
       this.replace(model, attrs);
     },
 
-    // Update the association when the `id` attribute changes.
+    // Update the association when the model `id` and relation `id` attribute changes.
     change: function(model) {
+      var idAttr = model.constructor.prototype.idAttribute;
+      if(!idAttr) idAttr = Backbone.Model.prototype.idAttribute;
+
+      if(model.hasChanged(idAttr)) {
+        var other = model[this.store];
+        if(other) {
+          this.associate(other, model);
+        }
+      }
+
       if (!model.hasChanged(this.id)) return;
       this.replace(model, model.get(this.id));
     },
@@ -165,7 +175,16 @@
 
       // Is `other` already the current model?
       if (other && !(other instanceof Model)) other = this.model.create(other);
-      if (current === other) return;
+
+      if (current === other) {
+        // updates relationship either locally or remotelly
+        if(other && other.getId() != model.get(this.id)) {
+          var attr;
+          (attr = {})[this.id] = other.getId();
+          model.set(attr, {silent: true});
+        }
+        return;
+      }
 
       // Tear down the current association.
       if (!other) model.unset(this.id);
@@ -175,9 +194,8 @@
       }
 
       if (!other) return;
-
       // Set up the new association.
-      model.set(this.id, other.id);
+      model.set(this.id, other.getId());
       model[this.store] = other;
       this.associate(other, model);
     }
@@ -253,6 +271,23 @@
     add: function(model, collection) {
       if (!model || !collection) return;
       this.associate(model, collection.owner);
+    },
+
+    // Update the inverse association when the model `id` attribute changes.
+    change: function(model) {
+      var idAttr = model.constructor.prototype.idAttribute;
+      if(!idAttr) idAttr = Backbone.Model.prototype.idAttribute;
+
+      if(model.hasChanged(idAttr)) {
+        var collection = model[this.store];
+        if(collection) {
+          var self = this;
+          _.each(collection.models, function(other) {
+            self.associate(other, model);
+          });
+        }
+      }
+
     },
 
     // Models removed from the collection should be dissociated from the owner.
@@ -460,6 +495,12 @@
     parse: function(resp) {
       this.trigger('parse', this, resp);
       return resp;
+    },
+
+    // Return remote id if exists, otherwise local id
+    getId: function() {
+      if(this.id) return this.id;
+      else return this.cid;
     }
 
   }, {
@@ -479,7 +520,9 @@
 
       // If found by id, modify and return it.
       if (id && model) {
-        model.set(model.parse(attrs), _.extend(options, {silent: false}));
+        if(id != model.cid) {
+          model.set(model.parse(attrs), _.extend(options, {silent: false}));
+        }
         return model;
       }
 
