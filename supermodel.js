@@ -20,16 +20,22 @@
   // Current version.
   Supermodel.VERSION = '0.0.4';
 
+  // Default configuration.
+  Supermodel.config = {
+    includeInJson: false
+  };
+
   // # Association
   //
   // Track associations between models.  Associated attributes are used and
   // then removed during `parse`.
   var Association = function(model, options) {
     this.required(options, 'name');
-    _.extend(this, _.pick(options, 'name', 'where', 'source', 'store'));
+    _.extend(this, _.pick(options, 'name', 'where', 'source', 'store', 'includeInJson'));
     _.defaults(this, {
       source: this.name,
-      store: '_' + this.name
+      store: '_' + this.name,
+      includeInJson: Supermodel.config.includeInJson
     });
 
     // Store a reference to this association by name after ensuring it's
@@ -448,10 +454,105 @@
       this.trigger('initialize', this);
     },
 
-    // While `"cid"` is used for tracking models, it should not be persisted.
+    // toJson is overhauled in order to support serialize associations.
     toJSON: function() {
       var o = Backbone.Model.prototype.toJSON.apply(this, arguments);
-      delete o[this.cidAttribute];
+
+      var options = arguments[0];
+
+      // Keeps included attributes only.
+      if(options && options.includeAttrs) {
+        if(_.isArray(options.includeAttrs)) {
+          for(var attr in o) {
+            if(_.indexOf(options.includeAttrs, attr) == -1) {
+              delete o[attr];
+            }
+          }
+        } else if(_.isString(options.includeAttrs)) {
+          for(var attr in o) {
+            if(options.includeAttrs != attr) {
+              delete o[attr];
+            }
+          }
+        }
+      }     
+
+      // Disposes excluded attributes.
+      if(options && options.excludeAttrs) {
+        if(_.isArray(options.excludeAttrs)) {
+          for(var attr in o) {
+            if(_.indexOf(options.excludeAttrs, attr) != -1) {
+              delete o[attr];
+            }
+          }
+        } else if(_.isString(options.excludeAttrs)) {
+          for(var attr in o) {
+            if(options.excludeAttrs == attr) {
+              delete o[attr];
+            }
+          }
+        } else {
+          for(var attr in o) {
+              delete o[attr];
+          }
+        }
+      }
+
+      var assocs = this.constructor._associations;
+
+      // Prepares 'includeInJson' config
+      var includeInJson = {};
+      if(options && options.includeInJson) {
+        // Checks includeInJson configuration from options.
+        if(_.isBoolean(options.includeInJson)) {
+          for(var assoc in assocs) {
+            includeInJson[assoc] = options.includeInJson;
+          }
+        } else if(_.isObject(options.includeInJson)) {
+          for(var assocOpt in options.includeInJson) {
+            includeInJson[assocOpt] = options.includeInJson[assocOpt];
+          }
+        }
+      } else {
+        // Checks includeInJson configuration from default config.
+        for(var assoc in assocs) {
+          includeInJson[assoc] = assocs[assoc].includeInJson;
+        }
+      }    
+        
+      // Converts associations to Json through 'includeInJson' config.
+      for(var assoc in includeInJson) {
+        var assocObj;
+        if(this[assoc]) {
+          assocObj = this[assoc]();
+        }
+
+        // Keeps objects already jsonified so as not to make it again.
+        var exclude = {};
+        if(options && options.exclude) exclude = options.exclude;
+
+        if(exclude[assocObj]) continue;
+
+        if(assocObj && includeInJson[assoc]) {
+          // Registers the object as it has already been jsonified.
+          exclude[this] = true;
+
+          var assocOptions = {
+            includeInJson: includeInJson,
+            exclude: exclude
+          };
+          if(includeInJson[assoc].includeAttrs) {            
+            assocOptions.includeAttrs = includeInJson[assoc].includeAttrs
+          } else if(includeInJson[assoc].excludeAttrs) {
+            assocOptions.excludeAttrs = includeInJson[assoc].excludeAttrs
+          } else {
+            assocOptions.includeAttrs = includeInJson[assoc]
+          }
+
+          o[assoc] = assocObj.toJSON(assocOptions);
+        }
+      }
+
       return o;
     },
 
