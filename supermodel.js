@@ -519,7 +519,7 @@
       if (model && attrs === model.attributes) return model;
 
       // If found by id, modify and return it.
-      if (id && model) {
+      if(model) {
         if(id != model.cid) {
           model.set(model.parse(attrs), _.extend(options, {silent: false}));
         }
