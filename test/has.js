@@ -805,7 +805,7 @@ test('Jsonifies a model and their associations by parameter.', function(t) {
 
   var includeInJson = {
     // Memberships assoc included and 'id' attribute is only shown
-    memberships: 'id',    
+    memberships: 'id',
     // Groups assoc included and 'id' and 'name' attribute are shown
     groups: ['id', 'name'],
     // Settings assoc included and all attributes are shown
@@ -828,7 +828,7 @@ test('Jsonifies a model and their associations by parameter.', function(t) {
   t.same(_.difference(allKeys, outputKeys).length, 0);
 
   // Output contains 'affiliations' association 
-  // but has nno associated instances linked, thus is empty
+  // but has not associated instances linked, thus is empty
   t.same(json.affiliations.length, 0);
 
   // Output contains 'membership' association and only 'id' attr is shown

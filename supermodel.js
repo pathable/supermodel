@@ -460,93 +460,75 @@
 
       var options = arguments[0];
 
-      // Keeps included attributes only.
-      if(options && options.includeAttrs) {
-        if(_.isArray(options.includeAttrs)) {
-          for(var attr in o) {
-            if(_.indexOf(options.includeAttrs, attr) == -1) {
-              delete o[attr];
-            }
-          }
-        } else if(_.isString(options.includeAttrs)) {
-          for(var attr in o) {
-            if(options.includeAttrs != attr) {
-              delete o[attr];
-            }
-          }
-        }
-      }     
+      // Get all associations for each constructor in its prototype chain.
+      var associations = {};
+      var ctor = this.constructor;
+      do { 
+        _.extend(associations, ctor._associations); 
+      } while (ctor = ctor.parent);
 
-      // Disposes excluded attributes.
-      if(options && options.excludeAttrs) {
-        if(_.isArray(options.excludeAttrs)) {
-          for(var attr in o) {
-            if(_.indexOf(options.excludeAttrs, attr) != -1) {
-              delete o[attr];
+      // Prepares 'configIncludeInJson' config
+      var configIncludeInJson = {};
+      if(options && options.configIncludeInJson) {        
+        _.extend(configIncludeInJson, options.configIncludeInJson);
+      } else {
+        if(options && options.includeInJson) {
+          // Sets configIncludeInJson from options.
+          if(_.isBoolean(options.includeInJson)) {
+            if(options.includeInJson) {
+              for(var assoc in associations) {
+                configIncludeInJson[assoc] = options.includeInJson;
+              }
+            }
+          } else if(_.isObject(options.includeInJson)) {
+            for(var assocOpt in options.includeInJson) {
+              configIncludeInJson[assocOpt] = options.includeInJson[assocOpt];
             }
           }
-        } else if(_.isString(options.excludeAttrs)) {
-          for(var attr in o) {
-            if(options.excludeAttrs == attr) {
-              delete o[attr];
+        } else {          
+          // Sets configIncludeInJson from default config.
+          for(var assoc in associations) {
+            if(associations[assoc].includeInJson) {
+              configIncludeInJson[assoc] = associations[assoc].includeInJson;
             }
-          }
-        } else {
-          for(var attr in o) {
-              delete o[attr];
           }
         }
       }
+      
+      // Keeps included attributes.
+      if(options && options.includeAttrs) {        
+        o = _.pick(o, options.includeAttrs);
 
-      var assocs = this.constructor._associations;
+        configIncludeInJson = _.pick(configIncludeInJson, options.includeAttrs);
+      }
 
-      // Prepares 'includeInJson' config
-      var includeInJson = {};
-      if(options && options.includeInJson) {
-        // Checks includeInJson configuration from options.
-        if(_.isBoolean(options.includeInJson)) {
-          for(var assoc in assocs) {
-            includeInJson[assoc] = options.includeInJson;
-          }
-        } else if(_.isObject(options.includeInJson)) {
-          for(var assocOpt in options.includeInJson) {
-            includeInJson[assocOpt] = options.includeInJson[assocOpt];
-          }
-        }
-      } else {
-        // Checks includeInJson configuration from default config.
-        for(var assoc in assocs) {
-          includeInJson[assoc] = assocs[assoc].includeInJson;
-        }
-      }    
-        
-      // Converts associations to Json through 'includeInJson' config.
-      for(var assoc in includeInJson) {
-        var assocObj;
-        if(this[assoc]) {
-          assocObj = this[assoc]();
-        }
+      // Disposes excluded attributes.
+      if(options && options.excludeAttrs) {
+        o = _.omit(o, options.excludeAttrs);
 
-        // Keeps objects already jsonified so as not to make it again.
-        var exclude = {};
-        if(options && options.exclude) exclude = options.exclude;
+        configIncludeInJson = _.omit(configIncludeInJson, options.excludeAttrs);
+      }
 
-        if(exclude[assocObj]) continue;
+      // Converts associations to Json from 'configIncludeInJson'.
+      for(var assoc in configIncludeInJson) {
+        var assocFunc = this[assoc];
+        if(!assocFunc) continue;
+      
+        var assocObj = assocFunc();
+        if(options && options.exclude && options.exclude == assocObj)
+          continue;
 
-        if(assocObj && includeInJson[assoc]) {
-          // Registers the object as it has already been jsonified.
-          exclude[this] = true;
-
+        if(assocObj && configIncludeInJson[assoc]) {
           var assocOptions = {
-            includeInJson: includeInJson,
-            exclude: exclude
+            configIncludeInJson: configIncludeInJson,
+            exclude: this
           };
-          if(includeInJson[assoc].includeAttrs) {            
-            assocOptions.includeAttrs = includeInJson[assoc].includeAttrs
-          } else if(includeInJson[assoc].excludeAttrs) {
-            assocOptions.excludeAttrs = includeInJson[assoc].excludeAttrs
-          } else {
-            assocOptions.includeAttrs = includeInJson[assoc]
+          if(configIncludeInJson[assoc].includeAttrs) {            
+            assocOptions.includeAttrs = configIncludeInJson[assoc].includeAttrs
+          } else if(configIncludeInJson[assoc].excludeAttrs) {
+            assocOptions.excludeAttrs = configIncludeInJson[assoc].excludeAttrs
+          } else if(!_.isBoolean(configIncludeInJson[assoc])) {
+            assocOptions.includeAttrs = configIncludeInJson[assoc]
           }
 
           o[assoc] = assocObj.toJSON(assocOptions);
