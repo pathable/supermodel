@@ -752,13 +752,12 @@ test('Associate local relationships and updates remote automatically (one-to-one
 
   user.settings(settings);
 
-  t.same(user.get("settings_id"), settings.cid);
-  t.same(settings.get("user_id"), user.cid);
+  t.same(user.settings(), settings);
+  t.same(settings.user(), user);
 
   settings.set({_id: 1});
 
   t.same(user.get("settings_id"), settings.id);
-  t.same(settings.get("user_id"), user.cid);
 
   user.set({id: 1});
 
@@ -773,7 +772,7 @@ test('Associate local relationships and updates remote automatically (many-to-on
 
   user.memberships().add(membership);
 
-  t.same(membership.get("user_id"), user.cid);
+  t.same(membership.user(), user);
 
   user.set({id: 1});
 
@@ -795,8 +794,8 @@ test('Associate local relationships and updates remote automatically (many-to-ma
     ]
   });
 
-  t.same(m1.get("user_id"), user.cid);
-  t.same(m1.get("group_id"), group.cid);
+  t.same(m1.user(), user);
+  t.same(m1.group(), group);
 
   group.set({id: 1});
   user.set({id: 1});
@@ -821,9 +820,9 @@ test('Change relationship by its relation id (one-to-one).', function(t) {
     settings_id: otherSettings.cid
   });
 
-  t.same(user.get("settings_id"), otherSettings.cid);
-  t.same(otherSettings.get("user_id"), user.cid);
-  t.ok(typeof settings.get("user_id") == 'undefined');
+  t.same(user.settings(), otherSettings);
+  t.same(otherSettings.user(), user);
+  t.ok(typeof settings.user() == 'undefined');
 
   t.end();
 });

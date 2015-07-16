@@ -195,7 +195,7 @@
 
       if (!other) return;
       // Set up the new association.
-      model.set(this.id, other.getId());
+      model.set(this.id, other.id);      
       model[this.store] = other;
       this.associate(other, model);
     }
