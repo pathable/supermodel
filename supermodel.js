@@ -20,9 +20,10 @@
   // Current version.
   Supermodel.VERSION = '0.0.4';
 
-  // Default configuration.
-  Supermodel.config = {
-    includeInJson: false
+  // Default serialize configuration.
+  Supermodel.configure = {
+    defaultInJson: false, // Set default configuration of serialization
+    cidInJson: false // whether or not include cid in object response when jsonify 
   };
 
   // # Association
@@ -31,11 +32,10 @@
   // then removed during `parse`.
   var Association = function(model, options) {
     this.required(options, 'name');
-    _.extend(this, _.pick(options, 'name', 'where', 'source', 'store', 'includeInJson'));
+    _.extend(this, _.pick(options, 'name', 'where', 'source', 'store', 'assocInJson'));
     _.defaults(this, {
       source: this.name,
-      store: '_' + this.name,
-      includeInJson: Supermodel.config.includeInJson
+      store: '_' + this.name
     });
 
     // Store a reference to this association by name after ensuring it's
@@ -435,6 +435,17 @@
     }
 
   });
+  
+  // Alter toJSON function from Collections to prevent loop on assoc jsonify
+  var toJSONCollection = Backbone.Collection.prototype.toJSON;
+  toJSONCollection = _.wrap(toJSONCollection, function(defaultToJSON) {
+    var options = arguments[1];
+    
+    if(options.preventLoop)
+      options.preventLoop = _.union(options.preventLoop, [this]);
+
+    return defaultToJSON.call(this, options);
+  });
 
   // # Model
   var Model = Supermodel.Model = Backbone.Model.extend({
@@ -458,83 +469,80 @@
     toJSON: function() {
       var o = Backbone.Model.prototype.toJSON.apply(this, arguments);
 
+      if(!Supermodel.configure.cidInJson) {
+        delete o[this.cidAttribute];
+      }
+
       var options = arguments[0];
 
-      // Get all associations for each constructor in its prototype chain.
-      var associations = {};
       var ctor = this.constructor;
-      do { 
-        _.extend(associations, ctor._associations); 
-      } while (ctor = ctor.parent);
-
-      // Prepares 'configIncludeInJson' config
-      var configIncludeInJson = {};
-      if(options && options.configIncludeInJson) {        
-        _.extend(configIncludeInJson, options.configIncludeInJson);
-      } else {
-        if(options && options.includeInJson) {
-          // Sets configIncludeInJson from options.
-          if(_.isBoolean(options.includeInJson)) {
-            if(options.includeInJson) {
-              for(var assoc in associations) {
-                configIncludeInJson[assoc] = options.includeInJson;
-              }
-            }
-          } else if(_.isObject(options.includeInJson)) {
-            for(var assocOpt in options.includeInJson) {
-              configIncludeInJson[assocOpt] = options.includeInJson[assocOpt];
-            }
-          }
-        } else {          
-          // Sets configIncludeInJson from default config.
-          for(var assoc in associations) {
-            if(associations[assoc].includeInJson) {
-              configIncludeInJson[assoc] = associations[assoc].includeInJson;
-            }
+      // Prepares 'configAssocInJson' object
+      var configAssocInJson = {};
+      if(options && options.configAssocInJson) {        
+        _.extend(configAssocInJson, options.configAssocInJson);
+      } else if(options && !_.isUndefined(options.assocInJson)) { // config by parameter
+          configAssocInJson = ctor.getConfigAssocInJson(options.assocInJson);     
+      } else if(!_.isUndefined(this.assocInJson)) { // config by class
+        configAssocInJson = ctor.getConfigAssocInJson(this.assocInJson);
+      } else { // config by relation
+        var allAssociations = ctor.allAssociations();
+        for(var assoc in allAssociations) {
+          var assocConfig = allAssociations[assoc].assocInJson;
+          if(!_.isUndefined(assocConfig) && assocConfig) {
+            configAssocInJson[assoc] = allAssociations[assoc].assocInJson;
           }
         }
+      }
+
+      // Set default values to configAssocInJson
+      if(Supermodel.configure.defaultInJson) {
+        _.defaults(configAssocInJson, ctor.getConfigAssocInJson(true));
       }
       
       // Keeps included attributes.
-      if(options && options.includeAttrs) {        
-        o = _.pick(o, options.includeAttrs);
+      if(options && options.includeInJson) {
+        o = _.pick(o, options.includeInJson);
 
-        configIncludeInJson = _.pick(configIncludeInJson, options.includeAttrs);
+        configAssocInJson = _.pick(configAssocInJson, options.includeInJson);
       }
 
       // Disposes excluded attributes.
-      if(options && options.excludeAttrs) {
-        o = _.omit(o, options.excludeAttrs);
+      if(options && options.excludeInJson) {
+        o = _.omit(o, options.excludeInJson);
 
-        configIncludeInJson = _.omit(configIncludeInJson, options.excludeAttrs);
+        configAssocInJson = _.omit(configAssocInJson, options.excludeInJson);
       }
 
-      // Converts associations to Json from 'configIncludeInJson'.
-      for(var assoc in configIncludeInJson) {
+      var preventLoop = [];
+      if(options) preventLoop =_.union(preventLoop, options.preventLoop);
+      // Jsonify relations from 'configAssocInJson' object.
+      for(var assoc in configAssocInJson) {
+        if(!configAssocInJson[assoc]) continue;
+
         var assocFunc = this[assoc];
-        if(!assocFunc) continue;
-      
+        if(!assocFunc) continue;    
+          
         var assocObj = assocFunc();
-        if(options && options.exclude && options.exclude == assocObj)
-          continue;
+        if(!assocObj || _.indexOf(preventLoop, assocObj) > -1) continue;
 
-        if(assocObj && configIncludeInJson[assoc]) {
-          var assocOptions = {
-            configIncludeInJson: configIncludeInJson,
-            exclude: this
-          };
-          if(configIncludeInJson[assoc].includeAttrs) {            
-            assocOptions.includeAttrs = configIncludeInJson[assoc].includeAttrs
-          } else if(configIncludeInJson[assoc].excludeAttrs) {
-            assocOptions.excludeAttrs = configIncludeInJson[assoc].excludeAttrs
-          } else if(!_.isBoolean(configIncludeInJson[assoc])) {
-            assocOptions.includeAttrs = configIncludeInJson[assoc]
-          }
+        preventLoop = _.union(preventLoop, [this]);
 
-          o[assoc] = assocObj.toJSON(assocOptions);
+        var assocOptions = {
+          configAssocInJson: configAssocInJson,
+          preventLoop: preventLoop
+        };
+        if(configAssocInJson[assoc].includeInJson) {            
+          assocOptions.includeInJson = configAssocInJson[assoc].includeInJson;
+        } else if(configAssocInJson[assoc].excludeInJson) {
+          assocOptions.excludeInJson = configAssocInJson[assoc].excludeInJson;
+        } else if(!_.isBoolean(configAssocInJson[assoc])) {
+          assocOptions.includeInJson = configAssocInJson[assoc];
         }
-      }
 
+        // Jsonify relation
+        o[assoc] = assocObj.toJSON(assocOptions);
+      }
+      
       return o;
     },
 
@@ -611,6 +619,31 @@
     // Return a hash of all associations for a particular constructor.
     associations: function() {
       return this._associations || (this._associations = {});
+    },
+
+    // Return a hash of all associations for each constructor in its prototype chain.
+    allAssociations: function() {
+      var allAssociations = {};
+      var ctor = this;
+      do { 
+        _.extend(allAssociations, ctor._associations); 
+      } while (ctor = ctor.parent);
+      return allAssociations;
+    },
+
+    // Create 'configAssocInJson' object
+    getConfigAssocInJson: function(assocInJson) {
+      var configAssocInJson = assocInJson;
+      if(_.isBoolean(assocInJson)) {
+        configAssocInJson = {}
+        if(assocInJson) {
+          var allAssociations = this.allAssociations();
+          for(var assoc in allAssociations) {
+            configAssocInJson[assoc] = assocInJson;
+          }
+        }
+      }
+      return configAssocInJson;
     },
 
     // Models and associations are tracked via `all` and `associations`,

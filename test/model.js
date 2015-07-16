@@ -70,7 +70,7 @@ test('Add model to all during initialize', function(t) {
 test('Use cid to identify attributes.', function(t) {
   var Model = Supermodel.Model.extend();
   var model = Model.create();
-  t.same(model.toJSON(), {cid: model.cid});
+  t.same(model.toJSON(), {});
   t.is(model.get('cid'), model.cid);
   t.ok(Model.create(model.attributes) === model);
   t.ok(Model.create({cid: model.cid}) !== model);
@@ -81,7 +81,7 @@ test('Use cidAttribute to identify attributes.', function(t) {
   var Model = Supermodel.Model.extend({cidAttribute: '_cid'});
   var model = Model.create();
   t.is(model.get('_cid'), model.cid);
-  t.same(model.toJSON(), {_cid: model.cid});
+  t.same(model.toJSON(), {});
   t.ok(Model.create(model.attributes) === model);
   t.ok(Model.create({_cid: model.cid}) !== model);
   t.end();
