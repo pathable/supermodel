@@ -20,13 +20,19 @@
   // Current version.
   Supermodel.VERSION = '0.0.4';
 
+  // Default serialize configuration.
+  Supermodel.configure = {
+    defaultInJson: false, // Set default configuration of serialization
+    cidInJson: false // whether or not include cid in object response when jsonify 
+  };
+
   // # Association
   //
   // Track associations between models.  Associated attributes are used and
   // then removed during `parse`.
   var Association = function(model, options) {
     this.required(options, 'name');
-    _.extend(this, _.pick(options, 'name', 'where', 'source', 'store'));
+    _.extend(this, _.pick(options, 'name', 'where', 'source', 'store', 'assocInJson'));
     _.defaults(this, {
       source: this.name,
       store: '_' + this.name
@@ -283,7 +289,7 @@
     _associate: function(model, other) {
       if (!model || !other) return;
       if (this.where && !this.where(other)) return;
-      this.get(model).add(other);
+      this.get(model).add(other, {merge: true});
     },
 
     // Dissociated models should be removed from the collection.
@@ -340,7 +346,7 @@
     add: function(model, through) {
       if (!model || !through || !(model = model[this.source]())) return;
       if (this.where && !this.where(model)) return;
-      through.owner[this.name]().add(model);
+      through.owner[this.name]().add(model, {merge: true});
     },
 
     // Remove models from the collection when removed from the through
@@ -365,7 +371,7 @@
     _associate: function(through, model, other) {
       if (!through || !model || !other) return;
       if (this.where && !this.where(other)) return;
-      through.owner[this.name]().add(other);
+      through.owner[this.name]().add(other, {merge: true});
     },
 
     // Remove dissociated models, taking care to check for other instances.
@@ -429,6 +435,17 @@
     }
 
   });
+  
+  // Alter toJSON function from Collections to prevent loop on assoc jsonify
+  var toJSONCollection = Backbone.Collection.prototype.toJSON;
+  toJSONCollection = _.wrap(toJSONCollection, function(defaultToJSON) {
+    var options = arguments[1];
+    
+    if(options.preventLoop)
+      options.preventLoop = _.union(options.preventLoop, [this]);
+
+    return defaultToJSON.call(this, options);
+  });
 
   // # Model
   var Model = Supermodel.Model = Backbone.Model.extend({
@@ -448,10 +465,84 @@
       this.trigger('initialize', this);
     },
 
-    // While `"cid"` is used for tracking models, it should not be persisted.
+    // toJson is overhauled in order to support serialize associations.
     toJSON: function() {
       var o = Backbone.Model.prototype.toJSON.apply(this, arguments);
-      delete o[this.cidAttribute];
+
+      if(!Supermodel.configure.cidInJson) {
+        delete o[this.cidAttribute];
+      }
+
+      var options = arguments[0];
+
+      var ctor = this.constructor;
+      // Prepares 'configAssocInJson' object
+      var configAssocInJson = {};
+      if(options && options.configAssocInJson) {        
+        _.extend(configAssocInJson, options.configAssocInJson);
+      } else if(options && !_.isUndefined(options.assocInJson)) { // config by parameter
+          configAssocInJson = ctor.getConfigAssocInJson(options.assocInJson);     
+      } else if(!_.isUndefined(this.assocInJson)) { // config by class
+        configAssocInJson = ctor.getConfigAssocInJson(this.assocInJson);
+      } else { // config by relation
+        var allAssociations = ctor.allAssociations();
+        for(var assoc in allAssociations) {
+          var assocConfig = allAssociations[assoc].assocInJson;
+          if(!_.isUndefined(assocConfig) && assocConfig) {
+            configAssocInJson[assoc] = allAssociations[assoc].assocInJson;
+          }
+        }
+      }
+
+      // Set default values to configAssocInJson
+      if(Supermodel.configure.defaultInJson) {
+        _.defaults(configAssocInJson, ctor.getConfigAssocInJson(true));
+      }
+      
+      // Keeps included attributes.
+      if(options && options.includeInJson) {
+        o = _.pick(o, options.includeInJson);
+
+        configAssocInJson = _.pick(configAssocInJson, options.includeInJson);
+      }
+
+      // Disposes excluded attributes.
+      if(options && options.excludeInJson) {
+        o = _.omit(o, options.excludeInJson);
+
+        configAssocInJson = _.omit(configAssocInJson, options.excludeInJson);
+      }
+
+      var preventLoop = [];
+      if(options) preventLoop =_.union(preventLoop, options.preventLoop);
+      // Jsonify relations from 'configAssocInJson' object.
+      for(var assoc in configAssocInJson) {
+        if(!configAssocInJson[assoc]) continue;
+
+        var assocFunc = this[assoc];
+        if(!assocFunc) continue;    
+          
+        var assocObj = assocFunc();
+        if(!assocObj || _.indexOf(preventLoop, assocObj) > -1) continue;
+
+        preventLoop = _.union(preventLoop, [this]);
+
+        var assocOptions = {
+          configAssocInJson: configAssocInJson,
+          preventLoop: preventLoop
+        };
+        if(configAssocInJson[assoc].includeInJson) {            
+          assocOptions.includeInJson = configAssocInJson[assoc].includeInJson;
+        } else if(configAssocInJson[assoc].excludeInJson) {
+          assocOptions.excludeInJson = configAssocInJson[assoc].excludeInJson;
+        } else if(!_.isBoolean(configAssocInJson[assoc])) {
+          assocOptions.includeInJson = configAssocInJson[assoc];
+        }
+
+        // Jsonify relation
+        o[assoc] = assocObj.toJSON(assocOptions);
+      }
+      
       return o;
     },
 
@@ -514,12 +605,45 @@
 
     // Return a collection of all models for a particular constructor.
     all: function() {
-      return this._all || (this._all = new Backbone.Collection);
+      if(!this._all) {
+        var Constructor = this;
+        var All = Backbone.Collection.extend({
+          model: Constructor
+        });
+
+        this._all = new All();
+      }
+      return this._all;
     },
 
     // Return a hash of all associations for a particular constructor.
     associations: function() {
       return this._associations || (this._associations = {});
+    },
+
+    // Return a hash of all associations for each constructor in its prototype chain.
+    allAssociations: function() {
+      var allAssociations = {};
+      var ctor = this;
+      do { 
+        _.extend(allAssociations, ctor._associations); 
+      } while (ctor = ctor.parent);
+      return allAssociations;
+    },
+
+    // Create 'configAssocInJson' object
+    getConfigAssocInJson: function(assocInJson) {
+      var configAssocInJson = assocInJson;
+      if(_.isBoolean(assocInJson)) {
+        configAssocInJson = {}
+        if(assocInJson) {
+          var allAssociations = this.allAssociations();
+          for(var assoc in allAssociations) {
+            configAssocInJson[assoc] = assocInJson;
+          }
+        }
+      }
+      return configAssocInJson;
     },
 
     // Models and associations are tracked via `all` and `associations`,

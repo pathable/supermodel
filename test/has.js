@@ -115,7 +115,7 @@ test('Associations are created lazily.', function(t) {
 
 test('Collections handle duplicates correctly.', function(t) {
   var users = new Users([{id: 1}]);
-  users.add({id: 1, name: 'brad'});
+  users.add({id: 1, name: 'brad'}, {merge: true});
   t.is(users.at(0).get('name'), 'brad');
   t.end();
 });
@@ -745,3 +745,237 @@ test('Nested Parse.', function(t) {
 
   t.end();
 });
+
+test('Jsonifies a model and their associations by parameter.', function(t) {
+  var user = User.create({
+    id: 2, 
+    memberships: [{
+      id: 3,
+      group: {
+        id: 1,
+        name: "SuperTeam"
+      }
+    }],
+    settings: {
+      id: 1
+    }
+  });
+
+  var assocInJson = {
+    // Memberships assoc included and 'id' attribute is only shown
+    memberships: 'id',
+    // Groups assoc included and 'id' and 'name' attribute are shown
+    groups: ['id', 'name'],
+    // Settings assoc included and all attributes are shown
+    settings: true,
+    // Affiliations assoc included and all attributes are shown
+    affiliations: true
+  };
+
+  var json = user.toJSON({
+    assocInJson: assocInJson
+  });
+
+  // Output contains configured associations
+  var attrsKeys = Object.keys(_.omit(user.attributes, "cid"));
+  var assocKeys = Object.keys(assocInJson);
+  var expectedKeys = _.union(attrsKeys, assocKeys);
+
+  var actualKeys = Object.keys(json);
+
+  t.same(actualKeys, expectedKeys);
+
+  // Output contains 'affiliations' association 
+  // but has not associated instances linked, thus is empty
+  t.same(json.affiliations.length, 0);
+
+  // Output contains 'membership' association and only 'id' attr is shown
+  expectedKeys = [assocInJson.memberships];
+  actualKeys = Object.keys(json.memberships[0]);
+
+  t.same(actualKeys, expectedKeys);
+
+  // Output contains 'groups' association and 'id' and 'name' is shown
+  expectedKeys = assocInJson.groups;
+  actualKeys = Object.keys(json.groups[0]);
+
+  t.same(actualKeys, expectedKeys);
+
+  // Output contains 'settings' association and all attributes are shown
+  var expectedKeys = Object.keys(_.omit(user.settings().attributes, "cid"));
+  var actualKeys = Object.keys(json.settings);
+
+  t.same(actualKeys, expectedKeys);
+
+  t.end();
+});
+
+test('Jsonifies a model and their associations by class.', function(t) {
+  var Parent = Supermodel.Model.extend({
+    defaults: {
+      foo: ""
+    },
+    assocInJson: {
+      child: {
+        excludeInJson: ["id", "stuff"]
+      }
+    }
+  });
+
+  var Child = Supermodel.Model.extend({
+    defaults: {
+      stuff: ""
+    },
+    assocInJson: {
+      parent: {
+        includeInJson: "id"
+      }
+    }
+  });
+
+  Parent.has().one('child', {
+    model: Child,
+    inverse: 'parent'
+  });
+
+  Child.has().one('parent', {
+    model: Parent,
+    inverse: 'child'
+  });
+
+  var p1 = Parent.create({
+    id: 1,
+    foo: 'bar',
+    child: {
+      id: 2,
+      stuff: 'nonsense'
+    }
+  });
+
+  var p1Json = p1.toJSON();
+
+  var expectedKeys = ["parent_id"];
+  var actualKeys = Object.keys(p1Json.child);
+
+  // Output contains 'child' association and 'id' and 'stuff' attributes are omitted
+  t.same(actualKeys, expectedKeys);
+
+  var ch1Json = p1.child().toJSON();
+
+  expectedKeys = ["id"];
+  actualKeys = Object.keys(ch1Json.parent);
+
+  // Output contains 'aprent' association and 'id' is only included
+  t.same(actualKeys, expectedKeys);
+
+  t.end();
+});
+
+test('Jsonifies a model and their associations by relation.', function(t) {
+  var Parent = Supermodel.Model.extend();
+  var Child = Supermodel.Model.extend();
+
+  Parent.has().one('child', {
+    model: Child,
+    assocInJson: 'stuff',
+    inverse: 'parent'
+  });
+
+  Child.has().one('parent', {
+    model: Parent,
+    assocInJson: false,
+    inverse: 'child'
+  });
+
+  var p1 = Parent.create({
+    id: 1,
+    foo: 'bar',
+    child: {
+      id: 2,
+      stuff: 'nonsense'
+    }
+  });
+
+  var p1Json = p1.toJSON();
+
+  // Output contains 'child' association and 'stuff' attribute is only shown
+  var actualKeys = [p1.constructor._associations.child.assocInJson];
+  var expectedKeys = Object.keys(p1Json.child);
+
+  t.same(actualKeys, expectedKeys);
+
+  var ch1Json = p1.child().toJSON();
+
+  // Output does not contains 'parent' association'
+  t.ok(typeof ch1Json.parent == 'undefined');
+
+  t.end();
+});
+
+test('Jsonifies a model and keep default configuration.', function(t) {
+  _.extend(Supermodel.configure, {
+    defaultInJson: true
+  });
+
+  var user = User.create({
+    id: 2, 
+    memberships: [{
+      id: 3
+    }],
+    settings: {
+      id: 1
+    }
+  });
+
+  var assocInJson = {
+    // Memberships assoc included and no attributes are shown
+    memberships: false
+  };
+
+  var json = user.toJSON({
+    assocInJson: assocInJson
+  });
+
+  // Output contains 'settings' association and all attributes are shown
+  var expectedKeys = Object.keys(_.omit(user.settings().attributes, "cid"));
+  var actualKeys = Object.keys(json.settings);
+
+  t.same(actualKeys, expectedKeys);
+
+  // Output does not contain 'memberships' association
+  var expected = undefined;
+  var actual = json.memberships;
+
+  t.same(actual, expected);
+
+  t.end();
+});
+
+test('Includes and excludes configured attributes when jsonify.', function(t) {
+  var user = User.create({
+    id: 2,
+    name: "James"
+  });
+
+  var json = user.toJSON({
+    includeInJson: 'name'
+  });
+
+  // Output only contain 'name' attribute
+  var outputKeys = Object.keys(json);
+
+  t.same(['name'], outputKeys);
+
+  json = user.toJSON({
+    excludeInJson: 'cid'
+  });
+
+  // 'cid' attribute is excluded from output
+  outputKeys = Object.keys(json);
+
+  t.same(outputKeys.indexOf('cid'), -1);
+
+  t.end();
+});
+
+
