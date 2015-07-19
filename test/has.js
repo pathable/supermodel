@@ -750,17 +750,24 @@ test('Associate local relationships and updates remote automatically (one-to-one
   var user = User.create();
   var settings = Settings.create();
 
+  // There is not an id available neither user nor settings model
   user.settings(settings);
+  // or user.set({settings_id: settings.cid}) also works
 
+  // association is set
   t.same(user.settings(), settings);
   t.same(settings.user(), user);
 
+  // Then a remote id is available for settings
   settings.set({_id: 1});
 
+  // hence it updates references automatically
   t.same(user.get("settings_id"), settings.id);
 
+  // Then a remote id is available for user
   user.set({id: 1});
 
+  // hence it updates references automatically
   t.same(settings.get("user_id"), user.id);
 
   t.end();
@@ -770,12 +777,15 @@ test('Associate local relationships and updates remote automatically (many-to-on
   var user = User.create();
   var membership = Membership.create();
 
+  // There is not an id available neither user nor settings model
   user.memberships().add(membership);
 
   t.same(membership.user(), user);
 
+  // Then a remote id is available
   user.set({id: 1});
 
+  // hence it updates references automatically
   t.same(membership.get("user_id"), user.id);
 
   t.end();
@@ -797,19 +807,21 @@ test('Associate local relationships and updates remote automatically (many-to-ma
   t.same(m1.user(), user);
   t.same(m1.group(), group);
 
+  // A remote id is available for user and group
   group.set({id: 1});
   user.set({id: 1});
 
+  // hence it updates references automatically
   t.same(m1.get("user_id"), user.id);
   t.same(m1.get("group_id"), group.id);
 
   t.end();
 });
 
-test('Change relationship by its relation id (one-to-one).', function(t) {
+test('Change relationship by its relation id and using `cid` value (one-to-one).', function(t) {
   var user = User.create();
   var settings = Settings.create();
-
+  
   user.set({
     settings_id: settings.cid
   });
@@ -827,7 +839,7 @@ test('Change relationship by its relation id (one-to-one).', function(t) {
   t.end();
 });
 
-test('Change relationship by its relation id (many-to-one).', function(t) {
+test('Change relationship by its relation id and using `cid` value (many-to-one).', function(t) {
   var user = User.create();
   var membership = Membership.create();
 

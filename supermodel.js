@@ -177,10 +177,10 @@
       if (other && !(other instanceof Model)) other = this.model.create(other);
 
       if (current === other) {
-        // updates relationship either locally or remotelly
+        // updates relationship when remote id is available
         if(other && other.getId() != model.get(this.id)) {
           var attr;
-          (attr = {})[this.id] = other.getId();
+          (attr = {})[this.id] = other.id;
           model.set(attr, {silent: true});
         }
         return;
@@ -497,7 +497,7 @@
       return resp;
     },
 
-    // Return remote id if exists, otherwise local id
+    // Return remote `id` if exists, otherwise local id `cid`
     getId: function() {
       if(this.id) return this.id;
       else return this.cid;
@@ -516,11 +516,9 @@
       if (!options) options = {};
 
       // If found by id, modify and return it.
-      if(model) {
-        
-        // Modifies only if `id` is not same as cid 
-        // and `attrs` does not belongs to an existing model.
-        if(id != model.cid && attrs !== model.attributes) {
+      if(model) {        
+        // Modifies only if `attrs` does not reference to an existing model.
+        if(attrs !== model.attributes) {
           model.set(model.parse(attrs), _.extend(options, {silent: false}));
           
           return model;
