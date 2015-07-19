@@ -515,14 +515,22 @@
 
       if (!options) options = {};
 
-      // If `attrs` belongs to an existing model, return it.
-      if (model && attrs === model.attributes) return model;
-
       // If found by id, modify and return it.
       if(model) {
-        if(id != model.cid) {
+        
+        // Modifies only if `id` is not same as cid 
+        // and `attrs` does not belongs to an existing model.
+        if(id != model.cid && attrs !== model.attributes) {
           model.set(model.parse(attrs), _.extend(options, {silent: false}));
+          
+          return model;
         }
+
+        // Makes validations if required by options
+        if(options.validate) {
+          model.set({}, options);
+        }
+        
         return model;
       }
 

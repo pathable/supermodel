@@ -1,4 +1,5 @@
 var _ = require('underscore');
+var Backbone = require('backbone');
 var Supermodel = require('../supermodel');
 
 var Model = Supermodel.Model;
@@ -127,4 +128,5 @@ test('#53 - Create passes through options.', function(t) {
   Model.create({id: 1, x: 1}, {foo: 'bar'});
   t.end();
 });
+
 

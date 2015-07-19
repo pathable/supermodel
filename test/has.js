@@ -847,3 +847,41 @@ test('Change relationship by its relation id (many-to-one).', function(t) {
 
   t.end();
 });
+
+test('Validation is always executed if required by options.', function(t) {
+  var SuperUser = Model.extend({
+    validate: function(attrs, options) {
+      if(!_.isString(attrs.name)) return "Name invalid";
+    }
+  });
+
+  var su = SuperUser.create({
+    id: 1, 
+    name: 17
+  }, {validate: true});
+
+  // The model rencently created must have set "validationError" to invalid
+  t.equal(su.validationError, "Name invalid");
+
+  // clear validateError message
+  su.validationError = null;
+
+  SuperUser.create(su.attributes, {validate: true});
+  
+  // The existing model that has been fetched by attribute reference must have set "validationError" to invalid
+  t.equal(su.validationError, "Name invalid");
+
+  // clear validateError message
+  su.validationError = null;
+
+
+  SuperUser.create({
+    id: 1,
+    name: "root"
+  }, {validate: true});
+
+  // The existing model that has been modified must have set "validationError" to valid
+  t.equal(su.validationError, null);
+
+  t.end();
+});
