@@ -4,13 +4,13 @@
   "main": "supermodel.js",
   "dependencies": {
     "underscore": ">=1.4.2",
-    "backbone": ">=0.9.2"
+    "backbone": ">=0.9.2 <1.2.1"
   },
   "devDependencies": {
     "docco": "~0.6.2",
     "uglify-js": "~2.4.11",
     "tape": "~2.4.2",
-    "browserify": "~3.23.1",
+    "browserify": "^6.3.2",
     "faucet": "0.0.0"
   },
   "testling": {

@@ -514,7 +514,15 @@
 
     // Return a collection of all models for a particular constructor.
     all: function() {
-      return this._all || (this._all = new Backbone.Collection);
+      if(!this._all) {
+        var Constructor = this;
+        var All = Backbone.Collection.extend({
+          model: Constructor
+        });
+
+        this._all = new All();
+      }
+      return this._all;
     },
 
     // Return a hash of all associations for a particular constructor.
