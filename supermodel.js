@@ -452,6 +452,17 @@
     toJSON: function() {
       var o = Backbone.Model.prototype.toJSON.apply(this, arguments);
       delete o[this.cidAttribute];
+      // if options set to include related models, set related model's toJSON response to
+      // the attribute of object the same value
+      if(this.withJSON) {
+        for (var i = 0; i < this.withJSON.length; i++) {
+          var related = this.withJSON[i];
+          // validate type of relationship exits and this model has an existing relationship
+          if (this[ related ] && this[ related ]() ) {
+            o[ related ] = this[ related ]().toJSON();
+          }
+        }
+      }
       return o;
     },
 
