@@ -289,7 +289,7 @@
     _associate: function(model, other) {
       if (!model || !other) return;
       if (this.where && !this.where(other)) return;
-      this.get(model).add(other, {merge: true});
+      this.get(model).add(other);
     },
 
     // Dissociated models should be removed from the collection.
@@ -346,7 +346,7 @@
     add: function(model, through) {
       if (!model || !through || !(model = model[this.source]())) return;
       if (this.where && !this.where(model)) return;
-      through.owner[this.name]().add(model, {merge: true});
+      through.owner[this.name]().add(model);
     },
 
     // Remove models from the collection when removed from the through
@@ -371,7 +371,7 @@
     _associate: function(through, model, other) {
       if (!through || !model || !other) return;
       if (this.where && !this.where(other)) return;
-      through.owner[this.name]().add(other, {merge: true});
+      through.owner[this.name]().add(other);
     },
 
     // Remove dissociated models, taking care to check for other instances.
@@ -435,7 +435,7 @@
     }
 
   });
-  
+
   // Alter toJSON function from Collections to prevent loop on assoc jsonify
   var toJSONCollection = Backbone.Collection.prototype.toJSON;
   toJSONCollection = _.wrap(toJSONCollection, function(defaultToJSON) {
@@ -463,7 +463,7 @@
 
       // Trigger 'initialize' for listening associations.
       this.trigger('initialize', this);
-    },
+    },    
 
     // toJson is overhauled in order to support serialize associations.
     toJSON: function() {
