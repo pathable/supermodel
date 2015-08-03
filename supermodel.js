@@ -436,6 +436,23 @@
     // The attribute to store the cid in for lookup.
     cidAttribute: 'cid',
 
+    constructor: function() {
+      // Enables a Supermodel to override initialize method
+      if(this.initialize !== Model.prototype.initialize) {
+        var self = this;  
+        var overridedInit = this.initialize;
+        
+        // Composes new initialize method that contains 
+        // both Supermodel's and overrided initialize method
+        this.initialize = _.wrap(Model.prototype.initialize, function(supermodelInit) {
+          supermodelInit.call(self, arguments[2]);
+          overridedInit.call(self, arguments[2]);
+        });
+      }
+      
+      return Backbone.Model.apply(this, arguments);
+    },
+
     initialize: function() {
       // Use `"cid"` for retrieving models by `attributes.cid`.
       this.set(this.cidAttribute, this.cid);
