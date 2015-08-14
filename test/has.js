@@ -316,6 +316,13 @@ test('Many is initialized only once.', function(t) {
   t.end();
 });
 
+test('has.One and has.Many should play nicly together', function(t) {
+  var user = User.create({id: 1});
+  var memberships = user.memberships().add({id: 1, user_id: 1})
+  t.is(user.memberships().length, 1);
+  t.end();
+});
+
 test('Source is removed after parsing.', function(t) {
   var user = User.create();
   user.parse({memberships: [{id: 1}, {id: 2, hidden: true}]});
