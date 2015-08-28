@@ -436,6 +436,23 @@
     // The attribute to store the cid in for lookup.
     cidAttribute: 'cid',
 
+    constructor: function() {
+      // Enables a Supermodel to override initialize method
+      if(this.initialize !== Model.prototype.initialize) {
+        var self = this;  
+        var overridedInit = this.initialize;
+        
+        // Composes new initialize method that contains 
+        // both Supermodel's and overrided initialize method
+        this.initialize = _.wrap(Model.prototype.initialize, function(supermodelInit) {
+          supermodelInit.call(self, arguments[2]);
+          overridedInit.call(self, arguments[2]);
+        });
+      }
+      
+      return Backbone.Model.apply(this, arguments);
+    },
+
     initialize: function() {
       // Use `"cid"` for retrieving models by `attributes.cid`.
       this.set(this.cidAttribute, this.cid);
@@ -452,6 +469,17 @@
     toJSON: function() {
       var o = Backbone.Model.prototype.toJSON.apply(this, arguments);
       delete o[this.cidAttribute];
+      // if options set to include related models, set related model's toJSON response to
+      // the attribute of object the same value
+      if(this.withJSON) {
+        for (var i = 0; i < this.withJSON.length; i++) {
+          var related = this.withJSON[i];
+          // validate type of relationship exits and this model has an existing relationship
+          if (this[ related ] && this[ related ]() ) {
+            o[ related ] = this[ related ]().toJSON();
+          }
+        }
+      }
       return o;
     },
 
