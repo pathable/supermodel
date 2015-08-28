@@ -129,4 +129,26 @@ test('#53 - Create passes through options.', function(t) {
   t.end();
 });
 
+test('Overrides and execute an initialize method properly.', function(t) {
+  var Model = Supermodel.Model.extend({
+    initialize: function(options) {
+      this.reached = true;
+      this.options = options;
+    }
+  });
 
+  var options = {
+    o1: 1
+  };
+  var model = Model.create({}, options);
+
+  // Supermodel's initialize method has been executed firstly
+  t.ok(model.get(model.cidAttribute) == model.cid);
+
+  // Overrided initialize method has been executed after
+  t.ok(model.reached);
+  // Options has been passed as parameters through the overrided initialized method
+  t.ok(model.options === options);
+
+  t.end();
+});
