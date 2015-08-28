@@ -543,7 +543,7 @@
 
         // Makes validations if required by options
         if(options.validate) {
-          model.set({}, options);
+          model._validate({}, options);
         }
         
         return model;
