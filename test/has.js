@@ -745,3 +745,39 @@ test('Nested Parse.', function(t) {
 
   t.end();
 });
+
+test('Clone a model works properly.', function(t) {
+  var Parent = Supermodel.Model.extend({
+    defaults: {
+      prop: 1
+    }
+  });  
+  var Child = Supermodel.Model.extend({});
+
+  Parent.has().one('child', {
+    model: Child,
+    inverse: 'parent'
+  });
+
+  var parent = Parent.create({
+    id: 1,
+    prop: 2,
+    child: {
+      id: 1
+    }
+  });
+
+  var clonedParent = parent.clone();
+
+  // Prop attribute stays the same
+  t.same(clonedParent.get('prop'), parent.get('prop'));
+
+  // Id attributes are different
+  t.ok(parent.cid !== clonedParent.cid);
+  t.ok(parent.id !== clonedParent.id);
+
+  // Child assoc does not exist
+  t.ok(parent.child() !== clonedParent.child());
+
+  t.end();
+});

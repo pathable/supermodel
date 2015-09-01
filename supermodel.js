@@ -477,6 +477,27 @@
     parse: function(resp) {
       this.trigger('parse', this, resp);
       return resp;
+    },
+
+    // Alters clone method to prepare a model copy ready to work as a Supermodel
+    // but without associations
+    clone: function() {
+      var ctor = this.constructor;
+      
+      // Attributes to copy
+      var attrsCopy = _.extend({}, this.attributes);
+
+      // Remove id attributes
+      delete attrsCopy.cid;
+      delete attrsCopy.id;
+
+      // Remove associations
+      var allAssociations = ctor.allAssociations();
+      for(var assoc in allAssociations) {
+        delete attrsCopy[allAssociations[assoc].id];
+      }
+
+      return new ctor(attrsCopy);
     }
 
   }, {
@@ -545,6 +566,18 @@
     // Return a hash of all associations for a particular constructor.
     associations: function() {
       return this._associations || (this._associations = {});
+    },
+
+    // Return a hash of all associations for each constructor in its prototype chain.
+    allAssociations: function() {
+      var allAssociations = {};
+
+      var ctor = this;
+      do { 
+        _.extend(allAssociations, ctor._associations); 
+      } while (ctor = ctor.parent);
+
+      return allAssociations;
     },
 
     // Models and associations are tracked via `all` and `associations`,
