@@ -482,14 +482,20 @@
     // Alters clone method to prepare a model copy ready to work as a Supermodel
     // but without associations
     clone: function() {
-      var ctor = this.constructor;
-      
+      var attrsCopy = this.cloneAttributes();
+      return new this.constructor(attrsCopy);
+    },
+
+    // Returns attributes to be cloned
+    cloneAttributes: function() {      
       // Attributes to copy
       var attrsCopy = _.extend({}, this.attributes);
 
+      var ctor = this.constructor;
+
       // Remove id attributes
-      delete attrsCopy.cid;
-      delete attrsCopy.id;
+      delete attrsCopy[ctor.prototype.cidAttribute];
+      delete attrsCopy[ctor.prototype.idAttribute];
 
       // Remove associations
       var allAssociations = ctor.allAssociations();
@@ -497,7 +503,7 @@
         delete attrsCopy[allAssociations[assoc].id];
       }
 
-      return new ctor(attrsCopy);
+      return attrsCopy;
     }
 
   }, {
