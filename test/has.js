@@ -781,3 +781,105 @@ test('Clone a model works properly.', function(t) {
 
   t.end();
 });
+
+test('Trigger events from the association level (One and ManyToOne).', function(t) {
+  t.plan(5);
+
+  var Parent = Supermodel.Model.extend({
+    defaults: {
+      name: ""
+    }
+  }); 
+
+  var Child = Supermodel.Model.extend({
+    defaults: {      
+      stuff: 'nonsense'
+    }
+  });
+
+  var Children = Backbone.Collection.extend({
+    model: function(attrs, options) {
+      return Child.create(attrs, options);
+    }
+  });
+
+  Parent.has().one('child', {
+    model: Child,
+    inverse: 'parent'
+  });
+
+  Parent.has().many('children', {
+    collection: Children,
+    inverse: 'parent'
+  });
+
+  var parent = Parent.create({
+    id: 1
+  });
+
+  var child = Child.create({
+    stuff: 'nonsense'
+  });
+
+  /* One events */
+  parent.on("replace:child", function(model, other) {
+    t.pass();
+  });
+
+  parent.on("change:child", function(model, options) {
+    t.pass();
+  });
+
+  parent.on("change:child:stuff", function(model, value, options) {
+    t.same(value, 'sense');
+  });
+
+  /* Many to One events */
+  parent.on("add:children", function(model, collection, options) {
+    t.ok(model == child);
+  });
+
+  parent.on("change:children", function(model, options) {
+    t.same(model.changedAttributes().stuff, 'sense');
+  });
+
+  parent.child(child);
+
+  parent.children().add(child);
+
+  parent.child().set('stuff', 'sense');  
+});
+
+test('Trigger events from the association level (ManyToMany).', function(t) {
+  t.plan(4);
+
+  /* Many to Many events */
+  var user = User.create();
+
+  var group = Group.create({
+    id: 1
+  });
+
+  var membership = Membership.create({
+    id: 3
+  });
+
+  group.on("add:users", function(model, collection, options) {
+    t.pass();
+  });
+
+  user.on("add:groups", function(model, collection, options) {
+    t.pass();
+  });
+
+  user.on("add:memberships", function(model, collection, options) {
+    t.pass();
+  });
+
+  group.on("add:memberships", function(model, collection, options) {
+    t.pass();
+  });
+
+  group.users().add(user);
+  user.groups().add(group);
+});
