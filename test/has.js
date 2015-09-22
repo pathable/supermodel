@@ -782,104 +782,109 @@ test('Clone a model works properly.', function(t) {
   t.end();
 });
 
-test('Trigger events from the association level (One and ManyToOne).', function(t) {
+test('Triggers events from the association level (One and ManyToOne).', function(t) {
   t.plan(5);
 
-  var Parent = Supermodel.Model.extend({
-    defaults: {
-      name: ""
-    }
-  }); 
-
-  var Child = Supermodel.Model.extend({
-    defaults: {      
-      stuff: 'nonsense'
-    }
+  var user = User.create({
+    name: "Nacho"
   });
-
-  var Children = Backbone.Collection.extend({
-    model: function(attrs, options) {
-      return Child.create(attrs, options);
-    }
-  });
-
-  Parent.has().one('child', {
-    model: Child,
-    inverse: 'parent'
-  });
-
-  Parent.has().many('children', {
-    collection: Children,
-    inverse: 'parent'
-  });
-
-  var parent = Parent.create({
-    id: 1
-  });
-
-  var child = Child.create({
-    stuff: 'nonsense'
-  });
-
-  /* One events */
-  parent.on("replace:child", function(model, other) {
-    t.pass();
-  });
-
-  parent.on("change:child", function(model, options) {
-    t.pass();
-  });
-
-  parent.on("change:child:stuff", function(model, value, options) {
-    t.same(value, 'sense');
-  });
-
-  /* Many to One events */
-  parent.on("add:children", function(model, collection, options) {
-    t.ok(model == child);
-  });
-
-  parent.on("change:children", function(model, options) {
-    t.same(model.changedAttributes().stuff, 'sense');
-  });
-
-  parent.child(child);
-
-  parent.children().add(child);
-
-  parent.child().set('stuff', 'sense');  
-});
-
-test('Trigger events from the association level (ManyToMany).', function(t) {
-  t.plan(4);
-
-  /* Many to Many events */
-  var user = User.create();
 
   var group = Group.create({
-    id: 1
+    defaults: {
+      name: "None"
+    }
   });
 
-  var membership = Membership.create({
-    id: 3
+  var settings = Settings.create({
+    defaults: {
+      subscribed: false
+    }
   });
 
+  /* One listeners */
+
+  // Listens an event waiting a "settings" to be associated to the user.
+  user.on("replace:settings", function(model, other) {
+    t.pass();
+  });
+
+  // Listens a change event on the "settings" model associated to the user.
+  user.on("change:settings", function(model, options) {
+    t.pass();
+  });
+
+  // Listens a change event on the "settings" model associated to the user, 
+  // concretly it listens to the "subscribed" attribute.
+  user.on("change:settings:subscribed", function(model, value, options) {
+    t.same(value, true);
+  });
+
+  /* Many to One listeners */
+
+  // Listens an add event waiting a "group" being added to the user.
+  user.on("add:groups", function(model, collection, options) {
+    t.ok(model === group);
+  });
+
+  // Listens a change event wainting a group associated to be changed.
+  user.on("change:groups", function(model, options) {
+    t.same(model.changedAttributes().name, 'Supermodel Team');
+  });
+
+
+  /* Performing triggers */
+
+  // Triggers replace event
+  user.settings(settings);
+
+  // Triggers a change on "settings"
+  user.settings().set('subscribed', true);
+
+  // Triggers an addition of a group to a user.
+  user.groups().add(group);
+
+  // Trigger a change on a group added to the user
+  group.set("name", 'Supermodel Team');
+});
+
+test('Triggers events from the association level (ManyToMany).', function(t) {
+  t.plan(4);
+
+  var user = User.create();
+
+  var group = Group.create();
+
+  var membership = Membership.create();
+
+  /* Many to Many listeners */
+
+  // Listens an user addition to a group.
   group.on("add:users", function(model, collection, options) {
     t.pass();
   });
 
-  user.on("add:groups", function(model, collection, options) {
-    t.pass();
-  });
-
-  user.on("add:memberships", function(model, collection, options) {
-    t.pass();
-  });
-
+  // Listens a membership addition to a group.
   group.on("add:memberships", function(model, collection, options) {
     t.pass();
   });
 
+  // Listens a group addition to a user.
+  user.on("add:groups", function(model, collection, options) {
+    t.pass();
+  });
+
+  // Listens a membership addition to a user.
+  user.on("add:memberships", function(model, collection, options) {
+    t.pass();
+  });
+
+  /* Performing triggers */
+
+  // Triggers an user addition to a group explicitly, 
+  // a membership is triggered implicity.
   group.users().add(user);
-  user.groups().add(group);
+
+  // Triggers a group addition to a user explicitly, 
+  // a membership is triggered implicitly.
+  user.groups().add(group);  
 });
