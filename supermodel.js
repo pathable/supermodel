@@ -115,10 +115,14 @@
 
     // Parse the models attributes.  If `source` isn't found use the `id`
     // attribute.
-    initialize: function(model) {
+    initialize: function(model, options) {
       this.parse(model, model.attributes);
       var id = model.get(this.id);
-      if (id != null) this.replace(model, id);
+      if( id==null ) return;
+      var other = this.alter(model, id);
+      if( !other ) return
+      var owner = options.collection && options.collection.owner
+      if( !owner || owner!=other ) this.associate(other, model);
     },
 
     // If `source` is provided, use it to initialize the association after
@@ -159,9 +163,14 @@
       this.dissociate(other, model);
     },
 
+    replace: function(model, other) {
+      var other = this.alter(model, other)
+      if( other ) this.associate(other, model)
+    },
+
     // Replace the current association with `other`, taking care to remove the
     // current association first.
-    replace: function(model, other) {
+    alter: function(model, other) {
       var id, current;
 
       if (!model) return;
@@ -192,12 +201,13 @@
         delete model[this.store];
         this.dissociate(current, model);
       }
-
-      if (!other) return;
-      // Set up the new association.
-      model.set(this.id, other.id);      
-      model[this.store] = other;
-      this.associate(other, model);
+      
+      if (other) {
+          // Set up the new association.
+          model.set(this.id, other.id);
+          model[this.store] = other;
+          return other;
+      }
     }
 
   });
@@ -488,7 +498,7 @@
       return Backbone.Model.apply(this, arguments);
     },
 
-    initialize: function() {
+    initialize: function(arguments, options) {
       // Use `"cid"` for retrieving models by `attributes.cid`.
       this.set(this.cidAttribute, this.cid);
 
@@ -497,13 +507,24 @@
       do { ctor.all().add(this); } while (ctor = ctor.parent);
 
       // Trigger 'initialize' for listening associations.
-      this.trigger('initialize', this);
+      this.trigger('initialize', this, options);
     },
 
     // While `"cid"` is used for tracking models, it should not be persisted.
     toJSON: function() {
       var o = Backbone.Model.prototype.toJSON.apply(this, arguments);
       delete o[this.cidAttribute];
+      // if options set to include related models, set related model's toJSON response to
+      // the attribute of object the same value
+      if(this.withJSON) {
+        for (var i = 0; i < this.withJSON.length; i++) {
+          var related = this.withJSON[i];
+          // validate type of relationship exits and this model has an existing relationship
+          if (this[ related ] && this[ related ]() ) {
+            o[ related ] = this[ related ]().toJSON();
+          }
+        }
+      }
       return o;
     },
 
