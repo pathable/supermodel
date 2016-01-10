@@ -134,8 +134,18 @@
       this.replace(model, attrs);
     },
 
-    // Update the association when the `id` attribute changes.
+    // Update the association when the model `id` and relation `id` attribute changes.
     change: function(model) {
+      var idAttr = model.constructor.prototype.idAttribute;
+      if(!idAttr) idAttr = Backbone.Model.prototype.idAttribute;
+
+      if(model.hasChanged(idAttr)) {
+        var other = model[this.store];
+        if(other) {
+          this.associate(other, model);
+        }
+      }
+
       if (!model.hasChanged(this.id)) return;
       this.replace(model, model.get(this.id));
     },
@@ -179,7 +189,16 @@
 
       // Is `other` already the current model?
       if (other && !(other instanceof Model)) other = this.model.create(other);
-      if (current === other) return;
+
+      if (current === other) {
+        // updates relationship when remote id is available
+        if(other && other.getId() != model.get(this.id)) {
+          var attr;
+          (attr = {})[this.id] = other.id;
+          model.set(attr, {silent: true});
+        }
+        return;
+      }
 
       // Tear down the current association.
       if (!other) model.unset(this.id);
@@ -313,6 +332,23 @@
     add: function(model, collection) {
       if (!model || !collection) return;
       this.associate(model, collection.owner);
+    },
+
+    // Update the inverse association when the model `id` attribute changes.
+    change: function(model) {
+      var idAttr = model.constructor.prototype.idAttribute;
+      if(!idAttr) idAttr = Backbone.Model.prototype.idAttribute;
+
+      if(model.hasChanged(idAttr)) {
+        var collection = model[this.store];
+        if(collection) {
+          var self = this;
+          _.each(collection.models, function(other) {
+            self.associate(other, model);
+          });
+        }
+      }
+
     },
 
     // Models removed from the collection should be dissociated from the owner.
@@ -579,6 +615,12 @@
       return resp;
     },
 
+    // Return remote `id` if exists, otherwise local id `cid`
+    getId: function() {
+      if(this.id) return this.id;
+      else return this.cid;
+    },
+
     // Alters clone method to prepare a model copy ready to work as a Supermodel
     // but without associations
     clone: function() {
@@ -618,12 +660,20 @@
 
       if (!options) options = {};
 
-      // If `attrs` belongs to an existing model, return it.
-      if (model && attrs === model.attributes) return model;
-
       // If found by id, modify and return it.
-      if (id && model) {
-        model.set(model.parse(attrs), _.extend(options, {silent: false}));
+      if(model) {        
+        // Modifies only if `attrs` does not reference to an existing model.
+        if(attrs !== model.attributes) {
+          model.set(model.parse(attrs), _.extend(options, {silent: false}));
+          
+          return model;
+        }
+
+        // Makes validations if required by options
+        if(options.validate) {
+          model._validate({}, options);
+        }
+        
         return model;
       }
 

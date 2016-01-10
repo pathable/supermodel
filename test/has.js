@@ -789,6 +789,158 @@ test('Clone a model works properly.', function(t) {
   t.end();
 });
 
+test('Associate local relationships and updates remote automatically (one-to-one).', function(t) {
+  var user = User.create();
+  var settings = Settings.create();
+
+  // There is not an id available neither user nor settings model
+  user.settings(settings);
+  // or user.set({settings_id: settings.cid}) also works
+
+  // association is set
+  t.same(user.settings(), settings);
+  t.same(settings.user(), user);
+
+  // Then a remote id is available for settings
+  settings.set({_id: 1});
+
+  // hence it updates references automatically
+  t.same(user.get("settings_id"), settings.id);
+
+  // Then a remote id is available for user
+  user.set({id: 1});
+
+  // hence it updates references automatically
+  t.same(settings.get("user_id"), user.id);
+
+  t.end();
+});
+
+test('Associate local relationships and updates remote automatically (many-to-one).', function(t) {
+  var user = User.create();
+  var membership = Membership.create();
+
+  // There is not an id available neither user nor settings model
+  user.memberships().add(membership);
+
+  t.same(membership.user(), user);
+
+  // Then a remote id is available
+  user.set({id: 1});
+
+  // hence it updates references automatically
+  t.same(membership.get("user_id"), user.id);
+
+  t.end();
+});
+
+test('Associate local relationships and updates remote automatically (many-to-many).', function(t) {
+  var group = Group.create();
+
+  var m1 = Membership.create({id: 3, group: {id: group.cid}});
+  var m2 = Membership.create({id: 4, group: {id: group.cid}});
+
+  var user = User.create({
+    memberships: [
+      {id: 3},
+      {id: 4}
+    ]
+  });
+
+  t.same(m1.user(), user);
+  t.same(m1.group(), group);
+
+  // A remote id is available for user and group
+  group.set({id: 1});
+  user.set({id: 1});
+
+  // hence it updates references automatically
+  t.same(m1.get("user_id"), user.id);
+  t.same(m1.get("group_id"), group.id);
+
+  t.end();
+});
+
+test('Change relationship by its relation id and using `cid` value (one-to-one).', function(t) {
+  var user = User.create();
+  var settings = Settings.create();
+  
+  user.set({
+    settings_id: settings.cid
+  });
+
+  var otherSettings = Settings.create();
+  
+  user.set({
+    settings_id: otherSettings.cid
+  });
+
+  t.same(user.settings(), otherSettings);
+  t.same(otherSettings.user(), user);
+  t.ok(typeof settings.user() == 'undefined');
+
+  t.end();
+});
+
+test('Change relationship by its relation id and using `cid` value (many-to-one).', function(t) {
+  var user = User.create();
+  var membership = Membership.create();
+
+  membership.set({
+    user_id: user.cid
+  });
+
+  var admin = User.create();
+  
+  membership.set({
+    user_id: admin.cid
+  });
+
+  t.same(membership.get("user_id"), admin.cid);
+  t.same(admin.memberships().get(membership), membership);
+  t.ok(typeof user.memberships().get(membership) == 'undefined');
+
+  t.end();
+});
+
+test('Validation is always executed if required by options.', function(t) {
+  var SuperUser = Model.extend({
+    validate: function(attrs, options) {
+      if(!_.isString(attrs.name)) return "Name invalid";
+    }
+  });
+
+  var su = SuperUser.create({
+    id: 1, 
+    name: 17
+  }, {validate: true});
+
+  // The model rencently created must have set "validationError" to invalid
+  t.equal(su.validationError, "Name invalid");
+
+  // clear validateError message
+  su.validationError = null;
+
+  SuperUser.create(su.attributes, {validate: true});
+  
+  // The existing model that has been fetched by attribute reference must have set "validationError" to invalid
+  t.equal(su.validationError, "Name invalid");
+
+  // clear validateError message
+  su.validationError = null;
+
+
+  SuperUser.create({
+    id: 1,
+    name: "root"
+  }, {validate: true});
+
+  // The existing model that has been modified must have set "validationError" to valid
+  t.equal(su.validationError, null);
+
+  t.end();
+});
+
 test('Triggers events from the association level (One and ManyToOne).', function(t) {
   t.plan(5);
 
@@ -852,6 +1004,8 @@ test('Triggers events from the association level (One and ManyToOne).', function
 
   // Trigger a change on a group added to the user
   group.set("name", 'Supermodel Team');
+
+  t.end();
 });
 
 test('Triggers events from the association level (ManyToMany).', function(t) {
@@ -893,5 +1047,7 @@ test('Triggers events from the association level (ManyToMany).', function(t) {
 
   // Triggers a group addition to a user explicitly, 
   // a membership is triggered implicitly.
-  user.groups().add(group);  
+  user.groups().add(group);
+  
+  t.end();
 });
