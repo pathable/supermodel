@@ -753,6 +753,42 @@ test('Nested Parse.', function(t) {
   t.end();
 });
 
+test('Clone a model works properly.', function(t) {
+  var Parent = Supermodel.Model.extend({
+    defaults: {
+      prop: 1
+    }
+  });  
+  var Child = Supermodel.Model.extend({});
+
+  Parent.has().one('child', {
+    model: Child,
+    inverse: 'parent'
+  });
+
+  var parent = Parent.create({
+    id: 1,
+    prop: 2,
+    child: {
+      id: 1
+    }
+  });
+
+  var clonedParent = parent.clone();
+
+  // Prop attribute stays the same
+  t.same(clonedParent.get('prop'), parent.get('prop'));
+
+  // Id attributes are different
+  t.ok(parent.cid !== clonedParent.cid);
+  t.ok(parent.id !== clonedParent.id);
+
+  // Child assoc does not exist
+  t.ok(parent.child() !== clonedParent.child());
+
+  t.end();
+});
+
 test('Associate local relationships and updates remote automatically (one-to-one).', function(t) {
   var user = User.create();
   var settings = Settings.create();
@@ -902,5 +938,116 @@ test('Validation is always executed if required by options.', function(t) {
   // The existing model that has been modified must have set "validationError" to valid
   t.equal(su.validationError, null);
 
+  t.end();
+});
+
+test('Triggers events from the association level (One and ManyToOne).', function(t) {
+  t.plan(5);
+
+  var user = User.create({
+    name: "Nacho"
+  });
+
+  var group = Group.create({
+    defaults: {
+      name: "None"
+    }
+  });
+
+  var settings = Settings.create({
+    defaults: {
+      subscribed: false
+    }
+  });
+
+  /* One listeners */
+
+  // Listens an event waiting a "settings" to be associated to the user.
+  user.on("replace:settings", function(model, other) {
+    t.pass();
+  });
+
+  // Listens a change event on the "settings" model associated to the user.
+  user.on("change:settings", function(model, options) {
+    t.pass();
+  });
+
+  // Listens a change event on the "settings" model associated to the user, 
+  // concretly it listens to the "subscribed" attribute.
+  user.on("change:settings:subscribed", function(model, value, options) {
+    t.same(value, true);
+  });
+
+  /* Many to One listeners */
+
+  // Listens an add event waiting a "group" being added to the user.
+  user.on("add:groups", function(model, collection, options) {
+    t.ok(model === group);
+  });
+
+  // Listens a change event wainting a group associated to be changed.
+  user.on("change:groups", function(model, options) {
+    t.same(model.changedAttributes().name, 'Supermodel Team');
+  });
+
+
+  /* Performing triggers */
+
+  // Triggers replace event
+  user.settings(settings);
+
+  // Triggers a change on "settings"
+  user.settings().set('subscribed', true);
+
+  // Triggers an addition of a group to a user.
+  user.groups().add(group);
+
+  // Trigger a change on a group added to the user
+  group.set("name", 'Supermodel Team');
+
+  t.end();
+});
+
+test('Triggers events from the association level (ManyToMany).', function(t) {
+  t.plan(4);
+
+  var user = User.create();
+
+  var group = Group.create();
+
+  var membership = Membership.create();
+
+  /* Many to Many listeners */
+
+  // Listens an user addition to a group.
+  group.on("add:users", function(model, collection, options) {
+    t.pass();
+  });
+
+  // Listens a membership addition to a group.
+  group.on("add:memberships", function(model, collection, options) {
+    t.pass();
+  });
+
+  // Listens a group addition to a user.
+  user.on("add:groups", function(model, collection, options) {
+    t.pass();
+  });
+
+  // Listens a membership addition to a user.
+  user.on("add:memberships", function(model, collection, options) {
+    t.pass();
+  });
+
+  /* Performing triggers */
+
+  // Triggers an user addition to a group explicitly, 
+  // a membership is triggered implicity.
+  group.users().add(user);
+
+  // Triggers a group addition to a user explicitly, 
+  // a membership is triggered implicitly.
+  user.groups().add(group);
+  
   t.end();
 });
