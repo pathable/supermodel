@@ -8,7 +8,7 @@
   },
   "devDependencies": {
     "docco": "~0.6.2",
-    "uglify-js": "~2.4.11",
+    "uglify-js": "~3.6.7",
     "tape": "~2.4.2",
     "browserify": "^6.3.2",
     "faucet": "0.0.0"
